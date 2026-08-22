@@ -8,13 +8,12 @@ import {
   joinCourse,
   listMembers,
   rejectMember,
+  roleLabel,
+  statusLabel,
   updateCourse,
   type Course,
   type Member,
 } from '../lib/courses';
-
-const roleLabel: Record<string, string> = { instructor: '講師', student: '生徒' };
-const statusLabel: Record<string, string> = { pending: '承認待ち', active: '参加中', rejected: '拒否済み' };
 
 /**
  * 講座詳細画面。誰が見ても名称・説明・小説一覧等へのリンクは出るが、
