@@ -1,0 +1,15 @@
+{
+  "name": "mckoy",
+  "private": true,
+  "workspaces": [
+    "apps/api",
+    "apps/web"
+  ],
+  "scripts": {
+    "dev:api": "npm run dev --workspace apps/api",
+    "dev:web": "npm run dev --workspace apps/web",
+    "test:api": "npm test --workspace apps/api",
+    "migrate:local": "npm run migrate:local --workspace apps/api",
+    "seed:admin": "npm run seed:admin --workspace apps/api"
+  }
+}

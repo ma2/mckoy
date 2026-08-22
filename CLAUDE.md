@@ -4,12 +4,51 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## プロジェクトの状態
 
-現時点でこのリポジトリには `MCKOY_SPEC.md` しか存在しない。package.json もビルドツールもテストスイートもまだない。
 `MCKOY_SPEC.md`（日本語の設計仕様書）が実装の正であり、コードを書く前に必ず参照すること。データモデル・API形状・
 認可ルールなど、このファイルより詳細な内容が記載されている。
 
-Cloudflare Workers バックエンド + Vite/React フロントエンドとしてプロジェクトが実際に構築された段階で、
-このファイルを実際の build/lint/test/migration コマンドで更新すること。推測で書かないこと。
+npm workspaces による monorepo。`apps/api`（Cloudflare Workers + Hono + D1、WebAuthn/Passkey認証）と
+`apps/web`（Vite + React + TypeScript）の2ワークスペース。現時点で実装済みなのは仕様書 §23 Phase 1
+（認証まわり: users / passkeys / invitations / sessions、招待受諾による登録、パスキーログイン、
+セッション管理、`/api/admin/invitations`、自分のパスキー管理）のみ。講座・小説等 Phase 2 以降は未実装。
+
+## 実行環境に関する重要な制約
+
+Cloudflare の `workerd` バイナリ（`wrangler dev` のローカル実行、および `@cloudflare/vitest-pool-workers`
+が内部で使用）は glibc 2.32 以上を要求する。**glibc 2.31 以下のホスト（例: Ubuntu 20.04）ではどの
+wrangler/workerd バージョンでもローカル実行・テストが起動できない。** この場合は Docker
+（`node:22-bookworm` 等、glibc 2.35 系のイメージ）内で `apps/api` を動かすこと。ホストの glibc は
+`ldd --version` で確認できる。
+
+## コマンド
+
+```bash
+# 依存関係インストール（リポジトリルートで）
+npm install
+
+# API: ローカル D1 に migration 適用
+npm run migrate:local   # = wrangler d1 migrations apply mckoy_db --local (apps/api)
+
+# API: 初期管理者の招待を作成（ローカルD1に直接 invitations 行を投入し、招待URLを表示）
+npm run seed:admin -- --name='管理者' --email='admin@example.com'   # (apps/api/scripts/seed-admin.mjs)
+
+# API: dev server (http://localhost:8787)
+npm run dev:api
+
+# Web: dev server (http://localhost:5173, /api は 8787 にプロキシ)
+npm run dev:web
+
+# API: 型チェック / テスト
+npm run typecheck --workspace apps/api
+npm run test:api        # = vitest run (apps/api, @cloudflare/vitest-pool-workers を使用)
+
+# Web: 型チェック
+npm run typecheck --workspace apps/web
+```
+
+glibc が古いホストでは、上記のうち migrate:local / dev:api / test:api は Docker コンテナ内から
+`/workspace` にリポジトリをバインドマウントして実行する（`apps/web` の dev server は glibc 制約と無関係
+なので直接実行できるが、`wrangler` の `/api` プロキシ先が動いていないと 502 になる）。
 
 ## Mckoy とは
 

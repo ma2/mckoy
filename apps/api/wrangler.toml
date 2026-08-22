@@ -1,0 +1,16 @@
+name = "mckoy-api"
+main = "src/index.ts"
+compatibility_date = "2024-11-01"
+compatibility_flags = ["nodejs_compat"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "mckoy_db"
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "migrations"
+
+[vars]
+RP_ID = "localhost"
+RP_NAME = "Mckoy"
+RP_ORIGIN = "http://localhost:5173"
+SESSION_COOKIE_SECURE = "false"

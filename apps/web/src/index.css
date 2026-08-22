@@ -1,0 +1,27 @@
+:root {
+  color-scheme: light dark;
+  font-family: system-ui, -apple-system, "Hiragino Sans", sans-serif;
+}
+
+body {
+  margin: 0;
+}
+
+.centered {
+  max-width: 28rem;
+  margin: 4rem auto;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+button {
+  padding: 0.6rem 1rem;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.error {
+  color: #c00;
+}
