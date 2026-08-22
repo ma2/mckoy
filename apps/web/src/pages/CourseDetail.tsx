@@ -108,6 +108,10 @@ export default function CourseDetail() {
       <h1>{course.name}</h1>
       <p>
         <Link to={`/courses/${id}/novels`}>小説一覧</Link>
+        {' | '}
+        <Link to={`/courses/${id}/assignments`}>課題</Link>
+        {' | '}
+        <Link to={`/courses/${id}/announcements`}>お知らせ</Link>
       </p>
       {message && <p>{message}</p>}
 

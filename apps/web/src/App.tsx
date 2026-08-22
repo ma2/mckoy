@@ -11,6 +11,8 @@ import CourseDetail from './pages/CourseDetail';
 import NovelList from './pages/NovelList';
 import NovelNew from './pages/NovelNew';
 import NovelDetail from './pages/NovelDetail';
+import CourseAssignments from './pages/CourseAssignments';
+import CourseAnnouncements from './pages/CourseAnnouncements';
 
 function RequireAuth({ children }: { children: ReactElement }) {
   const { state } = useAuth();
@@ -87,6 +89,22 @@ export default function App() {
             element={
               <RequireAuth>
                 <NovelDetail />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/courses/:id/assignments"
+            element={
+              <RequireAuth>
+                <CourseAssignments />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/courses/:id/announcements"
+            element={
+              <RequireAuth>
+                <CourseAnnouncements />
               </RequireAuth>
             }
           />

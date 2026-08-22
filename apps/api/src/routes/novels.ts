@@ -5,7 +5,8 @@ import { requireSession } from '../auth/session';
 import { getNovelById, updateNovel, softDeleteNovel, type NovelRow, type NovelVisibility } from '../db/novels';
 import { createRevision, listRevisionsByNovel } from '../db/novel_revisions';
 import { findOrCreateTagIds, setNovelTags, listTagsByNovel } from '../db/tags';
-import { getMembershipByCourseAndUser } from '../db/course_memberships';
+import { getMembershipByCourseAndUser, isActiveInstructor } from '../db/course_memberships';
+import { createComment, listCommentsByNovel } from '../db/comments';
 
 export const novelsRoute = new Hono<AppEnv>();
 
@@ -112,4 +113,38 @@ novelsRoute.get('/:id/revisions', async (c) => {
       createdAt: r.created_at,
     })),
   });
+});
+
+novelsRoute.get('/:id/comments', async (c) => {
+  const novel = await loadVisibleNovel(c.env.DB, c.get('user'), c.req.param('id'));
+  if (!novel) return c.json({ error: 'not_found' }, 404);
+
+  const comments = await listCommentsByNovel(c.env.DB, novel.id);
+  return c.json({
+    comments: comments.map((cm) => ({
+      id: cm.id,
+      userId: cm.user_id,
+      userName: cm.user_name,
+      body: cm.body,
+      createdAt: cm.created_at,
+    })),
+  });
+});
+
+novelsRoute.post('/:id/comments', async (c) => {
+  const user = c.get('user');
+  const novel = await loadVisibleNovel(c.env.DB, user, c.req.param('id'));
+  if (!novel) return c.json({ error: 'not_found' }, 404);
+
+  // MCKOY_SPEC.md §13: instructors comment on students' novels in their own
+  // course; since every novel's author is a student, this is equivalent to
+  // "an active instructor of the novel's course" (or an admin).
+  const canComment = user.isAdmin || (await isActiveInstructor(c.env.DB, novel.course_id, user.id));
+  if (!canComment) return c.json({ error: 'forbidden' }, 403);
+
+  const body = await c.req.json<{ body?: string }>();
+  if (!body.body) return c.json({ error: 'body_required' }, 400);
+
+  await createComment(c.env.DB, { id: crypto.randomUUID(), novelId: novel.id, userId: user.id, body: body.body });
+  return c.json({}, 201);
 });

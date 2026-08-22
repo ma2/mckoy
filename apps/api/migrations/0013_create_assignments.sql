@@ -1,0 +1,12 @@
+CREATE TABLE assignments (
+  id TEXT PRIMARY KEY,
+  course_id TEXT NOT NULL REFERENCES courses(id),
+  title TEXT NOT NULL,
+  body TEXT NOT NULL,
+  due_at TEXT,
+  created_by TEXT NOT NULL REFERENCES users(id),
+  created_at TEXT NOT NULL DEFAULT (CURRENT_TIMESTAMP),
+  updated_at TEXT NOT NULL DEFAULT (CURRENT_TIMESTAMP)
+);
+
+CREATE INDEX idx_assignments_course_id ON assignments(course_id);

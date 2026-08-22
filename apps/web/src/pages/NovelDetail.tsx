@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
 import { deleteNovel, getNovel, listRevisions, updateNovel, type Novel, type NovelVisibility, type Revision } from '../lib/novels';
+import { listComments, createComment, type Comment } from '../lib/comments';
+import { getMyMembership } from '../lib/courses';
 
 const visibilityLabel: Record<string, string> = {
   instructors: '講師のみ',
@@ -22,6 +24,9 @@ export default function NovelDetail() {
   const [deleteComment, setDeleteComment] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [notFound, setNotFound] = useState(false);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [newComment, setNewComment] = useState('');
+  const [canComment, setCanComment] = useState(false);
 
   async function load() {
     if (!id) return;
@@ -34,8 +39,28 @@ export default function NovelDetail() {
       setVisibility(novel.visibility);
       const { revisions } = await listRevisions(id);
       setRevisions(revisions);
+      const { comments } = await listComments(id);
+      setComments(comments);
+      const { membership } = await getMyMembership(novel.courseId);
+      setCanComment(
+        currentUser?.isAdmin === true || (membership?.role === 'instructor' && membership.status === 'active'),
+      );
     } catch {
       setNotFound(true);
+    }
+  }
+
+  async function handleAddComment(e: React.FormEvent) {
+    e.preventDefault();
+    if (!id) return;
+    setError(null);
+    try {
+      await createComment(id, newComment);
+      setNewComment('');
+      const { comments } = await listComments(id);
+      setComments(comments);
+    } catch {
+      setError('コメントの投稿に失敗しました。');
     }
   }
 
@@ -158,6 +183,25 @@ export default function NovelDetail() {
           </li>
         ))}
       </ul>
+
+      <h2>コメント</h2>
+      <ul>
+        {comments.map((c) => (
+          <li key={c.id}>
+            <strong>{c.userName}</strong>: {c.body}
+          </li>
+        ))}
+      </ul>
+      {canComment && (
+        <form onSubmit={handleAddComment} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+          <label>
+            コメント
+            <br />
+            <textarea value={newComment} onChange={(e) => setNewComment(e.target.value)} required />
+          </label>
+          <button type="submit">コメントを投稿</button>
+        </form>
+      )}
 
       <p>
         <Link to={`/courses/${novel.courseId}/novels`}>小説一覧へ戻る</Link>

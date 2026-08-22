@@ -14,6 +14,8 @@ import {
 import { createNovel, getNovelById, listNovelsByCourse, type NovelVisibility } from '../db/novels';
 import { createRevision } from '../db/novel_revisions';
 import { findOrCreateTagIds, setNovelTags, listTagsByNovel } from '../db/tags';
+import { createAssignment, listAssignmentsByCourse } from '../db/assignments';
+import { createAnnouncement, listAnnouncementsByCourse } from '../db/announcements';
 
 export const coursesRoute = new Hono<AppEnv>();
 
@@ -21,6 +23,19 @@ coursesRoute.use('*', requireSession);
 
 async function canManageCourse(db: D1Database, user: { isAdmin: boolean; id: string }, courseId: string) {
   return user.isAdmin || isActiveInstructor(db, courseId, user.id);
+}
+
+/**
+ * Assignments and announcements are course-internal content: MCKOY_SPEC.md §15
+ * states this explicitly for announcements ("only users with an active
+ * membership in the course may view them; admins may view/edit all"), and we
+ * apply the same rule to assignments for consistency, since the spec doesn't
+ * otherwise restrict who can see them and the app has no public content.
+ */
+async function hasActiveMembership(db: D1Database, user: { isAdmin: boolean; id: string }, courseId: string) {
+  if (user.isAdmin) return true;
+  const membership = await getMembershipByCourseAndUser(db, courseId, user.id);
+  return membership !== null && membership.status === 'active';
 }
 
 coursesRoute.get('/', async (c) => {
@@ -291,4 +306,84 @@ coursesRoute.post('/:id/novels', async (c) => {
     },
     201,
   );
+});
+
+coursesRoute.get('/:id/assignments', async (c) => {
+  const user = c.get('user');
+  const courseId = c.req.param('id');
+  if (!(await hasActiveMembership(c.env.DB, user, courseId))) {
+    return c.json({ error: 'forbidden' }, 403);
+  }
+  const assignments = await listAssignmentsByCourse(c.env.DB, courseId);
+  return c.json({
+    assignments: assignments.map((a) => ({
+      id: a.id,
+      title: a.title,
+      body: a.body,
+      dueAt: a.due_at,
+      createdBy: a.created_by,
+      createdAt: a.created_at,
+    })),
+  });
+});
+
+coursesRoute.post('/:id/assignments', async (c) => {
+  const user = c.get('user');
+  const courseId = c.req.param('id');
+  const course = await getCourseById(c.env.DB, courseId);
+  if (!course) return c.json({ error: 'not_found' }, 404);
+  if (!(await canManageCourse(c.env.DB, user, courseId))) {
+    return c.json({ error: 'forbidden' }, 403);
+  }
+
+  const body = await c.req.json<{ title?: string; body?: string; dueAt?: string | null }>();
+  if (!body.title || !body.body) {
+    return c.json({ error: 'title_and_body_required' }, 400);
+  }
+
+  await createAssignment(c.env.DB, {
+    id: crypto.randomUUID(),
+    courseId,
+    title: body.title,
+    body: body.body,
+    dueAt: body.dueAt ?? null,
+    createdBy: user.id,
+  });
+  return c.json({}, 201);
+});
+
+coursesRoute.get('/:id/announcements', async (c) => {
+  const user = c.get('user');
+  const courseId = c.req.param('id');
+  if (!(await hasActiveMembership(c.env.DB, user, courseId))) {
+    return c.json({ error: 'forbidden' }, 403);
+  }
+  const announcements = await listAnnouncementsByCourse(c.env.DB, courseId);
+  return c.json({
+    announcements: announcements.map((a) => ({
+      id: a.id,
+      title: a.title,
+      body: a.body,
+      createdBy: a.created_by,
+      createdAt: a.created_at,
+    })),
+  });
+});
+
+coursesRoute.post('/:id/announcements', async (c) => {
+  const user = c.get('user');
+  const courseId = c.req.param('id');
+  const course = await getCourseById(c.env.DB, courseId);
+  if (!course) return c.json({ error: 'not_found' }, 404);
+  if (!(await canManageCourse(c.env.DB, user, courseId))) {
+    return c.json({ error: 'forbidden' }, 403);
+  }
+
+  const body = await c.req.json<{ title?: string; body?: string }>();
+  if (!body.title || !body.body) {
+    return c.json({ error: 'title_and_body_required' }, 400);
+  }
+
+  await createAnnouncement(c.env.DB, { id: crypto.randomUUID(), courseId, title: body.title, body: body.body, createdBy: user.id });
+  return c.json({}, 201);
 });
