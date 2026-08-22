@@ -1,0 +1,4 @@
+CREATE TABLE tags (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL UNIQUE
+);

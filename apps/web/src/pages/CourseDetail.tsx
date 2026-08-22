@@ -106,6 +106,9 @@ export default function CourseDetail() {
   return (
     <main className="centered">
       <h1>{course.name}</h1>
+      <p>
+        <Link to={`/courses/${id}/novels`}>小説一覧</Link>
+      </p>
       {message && <p>{message}</p>}
 
       {!canManage && (

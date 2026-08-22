@@ -15,8 +15,14 @@ npm workspaces による monorepo。`apps/api`（Cloudflare Workers + Hono + D1�
 - Phase 2（講座）: courses / course_memberships、講座作成（作成者は同時にactive instructor
   membershipを得る）、講座編集、`/api/courses/:id/invitations`（講座紐付きの生徒招待、受諾で即active
   membership）、生徒からの参加申請（`/api/courses/:id/join`、pending→承認/拒否）
+- Phase 3（小説）: novels / novel_revisions / tags / novel_tags。投稿は対象講座のactiveな生徒のみ、
+  編集は作者のみ、削除は作者または管理者（モデレーション目的でユーザーとの相談の上そう決定 —
+  仕様書自体には管理者の削除権限は明記されていない）。visibility判定は
+  `routes/novels.ts` の `canViewNovel` に集約（管理者→作者本人→講座membershipの順）。改訂履歴は
+  作成・編集のたびに「確定した内容」を1件保存する方式（最新revisionは常に現在の本文と一致）。
+  論理削除された小説は削除者（管理者）以外には作者自身であっても見えない。
 
-小説・課題・お知らせ等 Phase 3 以降は未実装。
+課題・お知らせ・コメント等 Phase 4 以降は未実装。
 
 ## 実行環境に関する重要な制約
 

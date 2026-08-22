@@ -11,6 +11,9 @@ import {
   listMembershipsByCourse,
   updateMembershipStatus,
 } from '../db/course_memberships';
+import { createNovel, getNovelById, listNovelsByCourse, type NovelVisibility } from '../db/novels';
+import { createRevision } from '../db/novel_revisions';
+import { findOrCreateTagIds, setNovelTags, listTagsByNovel } from '../db/tags';
 
 export const coursesRoute = new Hono<AppEnv>();
 
@@ -192,4 +195,100 @@ coursesRoute.post('/:id/invitations', async (c) => {
   });
 
   return c.json({ invitationUrl: `${c.env.RP_ORIGIN}/invitations/${token}` }, 201);
+});
+
+coursesRoute.get('/:id/membership', async (c) => {
+  const user = c.get('user');
+  const courseId = c.req.param('id');
+  const membership = await getMembershipByCourseAndUser(c.env.DB, courseId, user.id);
+  return c.json({ membership: membership ? { role: membership.role, status: membership.status } : null });
+});
+
+coursesRoute.get('/:id/novels', async (c) => {
+  const user = c.get('user');
+  const courseId = c.req.param('id');
+  const course = await getCourseById(c.env.DB, courseId);
+  if (!course) return c.json({ error: 'not_found' }, 404);
+
+  const novels = await listNovelsByCourse(c.env.DB, courseId);
+  const membership = user.isAdmin ? null : await getMembershipByCourseAndUser(c.env.DB, courseId, user.id);
+
+  // Mirrors canViewNovel() in routes/novels.ts, but fetches the caller's
+  // membership once instead of per-novel.
+  const visible = novels.filter((novel) => {
+    if (user.isAdmin) return true;
+    if (novel.author_id === user.id) return true;
+    if (novel.visibility === 'all_users') return true;
+    if (!membership || membership.status !== 'active') return false;
+    if (novel.visibility === 'course_students') return true;
+    return novel.visibility === 'instructors' && membership.role === 'instructor';
+  });
+
+  return c.json({
+    novels: await Promise.all(
+      visible.map(async (novel) => ({
+        id: novel.id,
+        authorId: novel.author_id,
+        title: novel.title,
+        visibility: novel.visibility,
+        tags: await listTagsByNovel(c.env.DB, novel.id),
+        createdAt: novel.created_at,
+      })),
+    ),
+  });
+});
+
+coursesRoute.post('/:id/novels', async (c) => {
+  const user = c.get('user');
+  const courseId = c.req.param('id');
+  const course = await getCourseById(c.env.DB, courseId);
+  if (!course) return c.json({ error: 'not_found' }, 404);
+
+  const membership = await getMembershipByCourseAndUser(c.env.DB, courseId, user.id);
+  if (!membership || membership.role !== 'student' || membership.status !== 'active') {
+    return c.json({ error: 'forbidden' }, 403);
+  }
+
+  const body = await c.req.json<{ title?: string; body?: string; visibility?: NovelVisibility; tags?: string[] }>();
+  if (!body.title || !body.body) {
+    return c.json({ error: 'title_and_body_required' }, 400);
+  }
+
+  const id = crypto.randomUUID();
+  const visibility = body.visibility ?? 'instructors';
+  await createNovel(c.env.DB, {
+    id,
+    authorId: user.id,
+    courseId,
+    title: body.title,
+    body: body.body,
+    visibility,
+  });
+  await createRevision(c.env.DB, {
+    id: crypto.randomUUID(),
+    novelId: id,
+    title: body.title,
+    body: body.body,
+    revisionComment: null,
+    createdBy: user.id,
+  });
+  if (body.tags) {
+    const tagIds = await findOrCreateTagIds(c.env.DB, body.tags);
+    await setNovelTags(c.env.DB, id, tagIds);
+  }
+
+  const novel = await getNovelById(c.env.DB, id);
+  return c.json(
+    {
+      novel: {
+        id: novel!.id,
+        title: novel!.title,
+        body: novel!.body,
+        visibility: novel!.visibility,
+        tags: await listTagsByNovel(c.env.DB, id),
+        createdAt: novel!.created_at,
+      },
+    },
+    201,
+  );
 });

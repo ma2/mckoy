@@ -43,3 +43,6 @@ export const rejectMember = (courseId: string, membershipId: string) =>
 
 export const createCourseInvitation = (courseId: string, params: { name: string; email: string }) =>
   api.post<{ invitationUrl: string }>(`/courses/${courseId}/invitations`, params);
+
+export const getMyMembership = (courseId: string) =>
+  api.get<{ membership: { role: MembershipRole; status: MembershipStatus } | null }>(`/courses/${courseId}/membership`);

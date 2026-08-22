@@ -8,6 +8,9 @@ import Passkeys from './pages/Passkeys';
 import CourseList from './pages/CourseList';
 import CourseNew from './pages/CourseNew';
 import CourseDetail from './pages/CourseDetail';
+import NovelList from './pages/NovelList';
+import NovelNew from './pages/NovelNew';
+import NovelDetail from './pages/NovelDetail';
 
 function RequireAuth({ children }: { children: ReactElement }) {
   const { state } = useAuth();
@@ -60,6 +63,30 @@ export default function App() {
             element={
               <RequireAuth>
                 <CourseDetail />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/courses/:id/novels"
+            element={
+              <RequireAuth>
+                <NovelList />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/courses/:id/novels/new"
+            element={
+              <RequireAuth>
+                <NovelNew />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/novels/:id"
+            element={
+              <RequireAuth>
+                <NovelDetail />
               </RequireAuth>
             }
           />
