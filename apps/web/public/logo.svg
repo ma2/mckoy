@@ -1,0 +1,7 @@
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Mckoy">
+  <path d="M50,80 L18,64 L18,20 L50,26 Z" fill="#1d3a70"/>
+  <path d="M50,80 L82,64 L82,20 L50,26 Z" fill="#1d3a70"/>
+  <rect x="48.5" y="26" width="3" height="54" fill="#1d3a70"/>
+  <path d="M23.5,89.5 L16.5,82.5 L84.5,14.5 L91.5,21.5 Z" fill="#c2703d"/>
+  <path d="M84.5,14.5 L91.5,21.5 L96,10 Z" fill="#c2703d"/>
+</svg>

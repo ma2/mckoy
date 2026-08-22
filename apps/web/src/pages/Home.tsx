@@ -17,6 +17,7 @@ export default function Home() {
 
   return (
     <main className="centered">
+      <img src="/logo.svg" alt="Mckoy" width={40} height={40} />
       <h1>ようこそ、{user.name} さん</h1>
       <ul>
         <li>メール: {user.email}</li>
