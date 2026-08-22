@@ -25,6 +25,7 @@ export default function Login() {
 
   return (
     <main className="centered">
+      <img src="/logo.svg" alt="" width={56} height={56} />
       <h1>Mckoy</h1>
       <button onClick={handleLogin} disabled={pending}>
         パスキーでログイン
