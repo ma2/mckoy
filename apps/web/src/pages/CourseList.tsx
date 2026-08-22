@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
-import { listCourses, joinCourse, type Course } from '../lib/courses';
+import { listCourses, joinCourse, roleLabel, statusLabel, type Course } from '../lib/courses';
 
 /** 講座一覧画面。誰でも閲覧・参加申請できる。「新しい講座を作成」は管理者/can_teachのみ表示（実際の可否はサーバー側判定）。 */
 export default function CourseList() {
@@ -23,6 +23,7 @@ export default function CourseList() {
     try {
       await joinCourse(courseId);
       setMessage('参加申請を送信しました。講師の承認をお待ちください。');
+      await load();
     } catch {
       setMessage('参加申請に失敗しました（既に申請済みの可能性があります）。');
     }
@@ -53,9 +54,15 @@ export default function CourseList() {
                 </h3>
                 {course.description && <p className="entry-list__meta">{course.description}</p>}
               </div>
-              <button className="btn-secondary" onClick={() => handleJoin(course.id)}>
-                参加申請
-              </button>
+              {course.myMembership ? (
+                <span className="badge">
+                  {roleLabel[course.myMembership.role]} / {statusLabel[course.myMembership.status]}
+                </span>
+              ) : (
+                <button className="btn-secondary" onClick={() => handleJoin(course.id)}>
+                  参加申請
+                </button>
+              )}
             </li>
           ))}
         </ul>

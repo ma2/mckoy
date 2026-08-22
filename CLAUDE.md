@@ -14,7 +14,10 @@ npm workspaces による monorepo。`apps/api`（Cloudflare Workers + Hono + D1�
   セッション管理、`/api/admin/invitations`、自分のパスキー管理
 - Phase 2（講座）: courses / course_memberships、講座作成（作成者は同時にactive instructor
   membershipを得る）、講座編集、`/api/courses/:id/invitations`（講座紐付きの生徒招待、受諾で即active
-  membership）、生徒からの参加申請（`/api/courses/:id/join`、pending→承認/拒否）
+  membership）、生徒からの参加申請（`/api/courses/:id/join`、pending→承認/拒否）。
+  `GET /api/courses` は各講座に呼び出しユーザー自身のmembershipを含め、講座一覧UIは
+  それを見て「参加申請」ボタンではなくrole/statusバッジを出す（既に何らかの形で
+  関わっている講座に対して不適切な参加申請ボタンを出さないため、仕様書 §9.3）。
 - Phase 3（小説）: novels / novel_revisions / tags / novel_tags。投稿は対象講座のactiveな生徒のみ、
   編集は作者のみ、削除は作者または管理者（モデレーション目的でユーザーとの相談の上そう決定 —
   仕様書自体には管理者の削除権限は明記されていない）。visibility判定は

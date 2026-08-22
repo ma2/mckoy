@@ -81,6 +81,49 @@ describe('course creation', () => {
   });
 });
 
+describe('GET /courses includes the caller\'s own membership (issue #8)', () => {
+  it('reports the creator as an active instructor of their own course', async () => {
+    const app = buildApp();
+    const { id: courseId, owner } = await seedCourse();
+    const cookie = await loginAs(app, owner.id);
+
+    const res = await app.request('/courses', { headers: { cookie } }, env);
+    const { courses } = await res.json<{ courses: { id: string; myMembership: { role: string; status: string } | null }[] }>();
+    const course = courses.find((c) => c.id === courseId);
+
+    expect(course?.myMembership).toEqual({ role: 'instructor', status: 'active' });
+  });
+
+  it('reports null for a course the caller has no membership in', async () => {
+    const app = buildApp();
+    const { id: courseId } = await seedCourse();
+    const outsider = await createTestUser();
+    const cookie = await loginAs(app, outsider.id);
+
+    const res = await app.request('/courses', { headers: { cookie } }, env);
+    const { courses } = await res.json<{ courses: { id: string; myMembership: unknown }[] }>();
+    const course = courses.find((c) => c.id === courseId);
+
+    expect(course?.myMembership).toBeNull();
+  });
+
+  it('reports a pending join request', async () => {
+    const app = buildApp();
+    const { id: courseId } = await seedCourse();
+    const student = await createTestUser();
+    const cookie = await loginAs(app, student.id);
+
+    const joinRes = await app.request(`/courses/${courseId}/join`, { method: 'POST', headers: { cookie } }, env);
+    expect(joinRes.status).toBe(201);
+
+    const res = await app.request('/courses', { headers: { cookie } }, env);
+    const { courses } = await res.json<{ courses: { id: string; myMembership: { role: string; status: string } | null }[] }>();
+    const course = courses.find((c) => c.id === courseId);
+
+    expect(course?.myMembership).toEqual({ role: 'student', status: 'pending' });
+  });
+});
+
 describe('course editing authorization', () => {
   it('rejects an edit from a user who is not an active instructor of that course', async () => {
     const app = buildApp();

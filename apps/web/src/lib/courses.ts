@@ -2,16 +2,18 @@ import { api } from './api';
 
 // バックエンドの routes/courses.ts に対応するAPIクライアント。
 
+export type MembershipRole = 'instructor' | 'student';
+export type MembershipStatus = 'pending' | 'active' | 'rejected';
+
 export type Course = {
   id: string;
   name: string;
   description: string | null;
   createdBy: string;
   createdAt: string;
+  /** 呼び出しユーザー自身のこの講座でのmembership（無ければnull）。一覧での参加申請ボタン出し分けに使う。 */
+  myMembership: { role: MembershipRole; status: MembershipStatus } | null;
 };
-
-export type MembershipRole = 'instructor' | 'student';
-export type MembershipStatus = 'pending' | 'active' | 'rejected';
 
 export type Member = {
   id: string;
@@ -21,6 +23,13 @@ export type Member = {
   role: MembershipRole;
   status: MembershipStatus;
   createdAt: string;
+};
+
+export const roleLabel: Record<MembershipRole, string> = { instructor: '講師', student: '生徒' };
+export const statusLabel: Record<MembershipStatus, string> = {
+  pending: '承認待ち',
+  active: '参加中',
+  rejected: '拒否済み',
 };
 
 export const listCourses = () => api.get<{ courses: Course[] }>('/courses');

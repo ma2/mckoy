@@ -61,6 +61,15 @@ export async function listMembershipsByCourse(db: D1Database, courseId: string):
   return results;
 }
 
+/** あるユーザーが持つ全membershipを講座横断で返す。講座一覧で「自分は各講座で何者か」を一括表示するために使う。 */
+export async function listMembershipsByUser(db: D1Database, userId: string): Promise<MembershipRow[]> {
+  const { results } = await db
+    .prepare('SELECT * FROM course_memberships WHERE user_id = ?')
+    .bind(userId)
+    .all<MembershipRow>();
+  return results;
+}
+
 /** 参加申請の承認（active）・拒否（rejected）でstatusを更新する。 */
 export async function updateMembershipStatus(db: D1Database, id: string, status: MembershipStatus): Promise<void> {
   await db

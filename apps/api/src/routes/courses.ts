@@ -9,6 +9,7 @@ import {
   getMembershipById,
   isActiveInstructor,
   listMembershipsByCourse,
+  listMembershipsByUser,
   updateMembershipStatus,
 } from '../db/course_memberships';
 import { createNovel, getNovelById, listNovelsByCourse, type NovelVisibility } from '../db/novels';
@@ -42,17 +43,30 @@ async function hasActiveMembership(db: D1Database, user: { isAdmin: boolean; id:
   return membership !== null && membership.status === 'active';
 }
 
-/** 講座一覧。ログイン済みなら誰でも閲覧可（参加申請のために講座を選べる必要があるため）。 */
+/**
+ * 講座一覧。ログイン済みなら誰でも閲覧可（参加申請のために講座を選べる必要があるため）。
+ * 各講座に呼び出しユーザー自身のmembership（無ければnull）を含める — フロントが
+ * 「講師として参加中の自分の講座」や「既に参加申請済みの講座」に対して
+ * 「参加申請」ボタンを誤って出さないようにするため（issue #8）。
+ */
 coursesRoute.get('/', async (c) => {
+  const user = c.get('user');
   const courses = await listCourses(c.env.DB);
+  const myMemberships = await listMembershipsByUser(c.env.DB, user.id);
+  const myMembershipByCourseId = new Map(myMemberships.map((m) => [m.course_id, m]));
+
   return c.json({
-    courses: courses.map((course) => ({
-      id: course.id,
-      name: course.name,
-      description: course.description,
-      createdBy: course.created_by,
-      createdAt: course.created_at,
-    })),
+    courses: courses.map((course) => {
+      const membership = myMembershipByCourseId.get(course.id);
+      return {
+        id: course.id,
+        name: course.name,
+        description: course.description,
+        createdBy: course.created_by,
+        createdAt: course.created_at,
+        myMembership: membership ? { role: membership.role, status: membership.status } : null,
+      };
+    }),
   });
 });
 
