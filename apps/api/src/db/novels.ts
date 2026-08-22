@@ -34,12 +34,24 @@ export async function getNovelById(db: D1Database, id: string): Promise<NovelRow
   return db.prepare('SELECT * FROM novels WHERE id = ?').bind(id).first<NovelRow>();
 }
 
-/** 論理削除済み（deleted_at IS NOT NULL）を除いた、講座内の小説一覧。visibilityによる絞り込みは呼び出し側で行う。 */
-export async function listNovelsByCourse(db: D1Database, courseId: string): Promise<NovelRow[]> {
+export type NovelWithAuthorRow = NovelRow & { author_name: string };
+
+/**
+ * 論理削除済み（deleted_at IS NOT NULL）を除いた、講座内の小説一覧。作者の氏名も含める
+ * （一覧画面でどの生徒の作品か分かるようにするため、issue #10）。visibilityによる
+ * 絞り込みは呼び出し側で行う。
+ */
+export async function listNovelsByCourse(db: D1Database, courseId: string): Promise<NovelWithAuthorRow[]> {
   const { results } = await db
-    .prepare('SELECT * FROM novels WHERE course_id = ? AND deleted_at IS NULL ORDER BY created_at DESC')
+    .prepare(
+      `SELECT n.*, u.name as author_name
+       FROM novels n
+       JOIN users u ON u.id = n.author_id
+       WHERE n.course_id = ? AND n.deleted_at IS NULL
+       ORDER BY n.created_at DESC`,
+    )
     .bind(courseId)
-    .all<NovelRow>();
+    .all<NovelWithAuthorRow>();
   return results;
 }
 
