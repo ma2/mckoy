@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
-import { getMyMembership } from '../lib/courses';
+import { getCourse, getMyMembership, type Course } from '../lib/courses';
 import { listAnnouncements, createAnnouncement, type Announcement } from '../lib/announcements';
 
 /** 講座内のお知らせ一覧・作成画面。作成フォームはその講座のactive講師/管理者のみ表示する。 */
 export default function CourseAnnouncements() {
   const { id: courseId } = useParams<{ id: string }>();
   const { state } = useAuth();
+  const [course, setCourse] = useState<Course | null>(null);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [canManage, setCanManage] = useState(false);
   const [title, setTitle] = useState('');
@@ -18,6 +19,8 @@ export default function CourseAnnouncements() {
 
   async function load() {
     if (!courseId) return;
+    const { course } = await getCourse(courseId);
+    setCourse(course);
     const { announcements } = await listAnnouncements(courseId);
     setAnnouncements(announcements);
     const { membership } = await getMyMembership(courseId);
@@ -55,6 +58,7 @@ export default function CourseAnnouncements() {
           {announcements.map((a) => (
             <li key={a.id} className="entry-list__item">
               <h3>{a.title}</h3>
+              <p className="entry-list__meta">{a.createdAt}</p>
               <p style={{ whiteSpace: 'pre-wrap', marginBottom: 0 }}>{a.body}</p>
             </li>
           ))}
@@ -77,7 +81,7 @@ export default function CourseAnnouncements() {
         </div>
       )}
       <Link className="back-link" to={`/courses/${courseId}`}>
-        講座詳細へ戻る
+        {course ? `${course.name} トップへ` : '講座トップへ'}
       </Link>
     </main>
   );
