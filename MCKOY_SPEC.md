@@ -331,6 +331,13 @@ discoverable credential を利用し、可能な限りメールアドレスや�
 
 とする。
 
+### 9.3 講座一覧でのUI表示
+
+講座一覧画面では、ログインユーザーがその講座に既にmembershipを持つ場合（role・statusを
+問わない。講師として参加中、生徒として参加中、参加申請が承認待ち、いずれの場合も含む）は
+「参加申請」ボタンではなく現在のrole/statusを表示する。講師が自分の講座に対して参加申請
+できてしまう、といった不適切な導線を防ぐため。
+
 ---
 
 ## 10. 小説
@@ -737,7 +744,7 @@ GET    /api/me/passkeys
 POST   /api/me/passkeys
 DELETE /api/me/passkeys/:id
 
-GET    /api/courses
+GET    /api/courses   # 各講座に呼び出しユーザー自身のmembership(role/status、無ければnull)を含める（§9.3）
 POST   /api/courses
 GET    /api/courses/:id
 PATCH  /api/courses/:id
