@@ -8,9 +8,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 認可ルールなど、このファイルより詳細な内容が記載されている。
 
 npm workspaces による monorepo。`apps/api`（Cloudflare Workers + Hono + D1、WebAuthn/Passkey認証）と
-`apps/web`（Vite + React + TypeScript）の2ワークスペース。現時点で実装済みなのは仕様書 §23 Phase 1
-（認証まわり: users / passkeys / invitations / sessions、招待受諾による登録、パスキーログイン、
-セッション管理、`/api/admin/invitations`、自分のパスキー管理）のみ。講座・小説等 Phase 2 以降は未実装。
+`apps/web`（Vite + React + TypeScript）の2ワークスペース。現時点で実装済みなのは仕様書 §23 Phase 1〜2:
+
+- Phase 1（認証）: users / passkeys / invitations / sessions、招待受諾による登録、パスキーログイン、
+  セッション管理、`/api/admin/invitations`、自分のパスキー管理
+- Phase 2（講座）: courses / course_memberships、講座作成（作成者は同時にactive instructor
+  membershipを得る）、講座編集、`/api/courses/:id/invitations`（講座紐付きの生徒招待、受諾で即active
+  membership）、生徒からの参加申請（`/api/courses/:id/join`、pending→承認/拒否）
+
+小説・課題・お知らせ等 Phase 3 以降は未実装。
 
 ## 実行環境に関する重要な制約
 

@@ -26,6 +26,9 @@ export default function Home() {
       <p>
         <Link to="/passkeys">パスキー管理</Link>
       </p>
+      <p>
+        <Link to="/courses">講座一覧</Link>
+      </p>
       <button onClick={handleLogout}>ログアウト</button>
     </main>
   );

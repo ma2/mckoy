@@ -26,6 +26,8 @@ export async function createInvitation(
     name: string;
     isAdmin: boolean;
     canTeach: boolean;
+    courseId: string | null;
+    membershipRole: 'instructor' | 'student' | null;
     tokenHash: string;
     expiresAt: string;
     invitedBy: string | null;
@@ -33,7 +35,9 @@ export async function createInvitation(
 ): Promise<void> {
   await db
     .prepare(
-      'INSERT INTO invitations (id, email, name, is_admin, can_teach, token_hash, expires_at, invited_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      `INSERT INTO invitations
+         (id, email, name, is_admin, can_teach, course_id, membership_role, token_hash, expires_at, invited_by)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
     .bind(
       params.id,
@@ -41,6 +45,8 @@ export async function createInvitation(
       params.name,
       params.isAdmin ? 1 : 0,
       params.canTeach ? 1 : 0,
+      params.courseId,
+      params.membershipRole,
       params.tokenHash,
       params.expiresAt,
       params.invitedBy,

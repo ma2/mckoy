@@ -4,7 +4,7 @@ import { api } from '../lib/api';
 import { registerPasskeyForInvitation } from '../lib/webauthn';
 import { useAuth } from '../lib/auth';
 
-type InvitationInfo = { name: string; email: string };
+type InvitationInfo = { name: string; email: string; course: { id: string; name: string } | null };
 
 export default function AcceptInvitation() {
   const { token } = useParams<{ token: string }>();
@@ -58,6 +58,7 @@ export default function AcceptInvitation() {
       <h1>招待の確認</h1>
       <p>氏名: {invitation.name}</p>
       <p>メール: {invitation.email}</p>
+      {invitation.course && <p>「{invitation.course.name}」講座への招待です。</p>}
       <button onClick={handleRegister} disabled={pending}>
         パスキーを登録
       </button>

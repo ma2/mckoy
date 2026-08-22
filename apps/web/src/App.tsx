@@ -5,6 +5,9 @@ import Login from './pages/Login';
 import AcceptInvitation from './pages/AcceptInvitation';
 import Home from './pages/Home';
 import Passkeys from './pages/Passkeys';
+import CourseList from './pages/CourseList';
+import CourseNew from './pages/CourseNew';
+import CourseDetail from './pages/CourseDetail';
 
 function RequireAuth({ children }: { children: ReactElement }) {
   const { state } = useAuth();
@@ -33,6 +36,30 @@ export default function App() {
             element={
               <RequireAuth>
                 <Passkeys />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/courses"
+            element={
+              <RequireAuth>
+                <CourseList />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/courses/new"
+            element={
+              <RequireAuth>
+                <CourseNew />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/courses/:id"
+            element={
+              <RequireAuth>
+                <CourseDetail />
               </RequireAuth>
             }
           />
