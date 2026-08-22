@@ -14,3 +14,31 @@ RP_ID = "localhost"
 RP_NAME = "Mckoy"
 RP_ORIGIN = "http://localhost:5173"
 SESSION_COOKIE_SECURE = "false"
+
+# Production deploy: `npm run build --workspace apps/web` first, then
+# `wrangler deploy --env production` from apps/api. Serves the built SPA and
+# the API from the same Worker/origin, so no CORS or cross-site cookie config
+# is needed (same pattern as the Vite dev proxy).
+[env.production]
+name = "mckoy-api"
+
+[env.production.vars]
+# TODO: fill in after your first `wrangler deploy --env production` tells you
+# the assigned *.workers.dev hostname (or after you attach a custom domain).
+RP_ID = "TODO-your-worker-subdomain.workers.dev"
+RP_NAME = "Mckoy"
+RP_ORIGIN = "https://TODO-your-worker-subdomain.workers.dev"
+SESSION_COOKIE_SECURE = "true"
+
+[[env.production.d1_databases]]
+binding = "DB"
+database_name = "mckoy_db"
+# TODO: replace with the database_id printed by `wrangler d1 create mckoy_db`.
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "migrations"
+
+[env.production.assets]
+directory = "../web/dist"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+run_worker_first = ["/api/*"]
