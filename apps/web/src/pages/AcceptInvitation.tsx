@@ -41,6 +41,7 @@ export default function AcceptInvitation() {
   if (error) {
     return (
       <main className="centered">
+        <img src="/logo.svg" alt="" width={56} height={56} />
         <p className="error">{error}</p>
       </main>
     );
@@ -56,13 +57,24 @@ export default function AcceptInvitation() {
 
   return (
     <main className="centered">
+      <img src="/logo.svg" alt="" width={56} height={56} />
       <h1>招待の確認</h1>
-      <p>氏名: {invitation.name}</p>
-      <p>メール: {invitation.email}</p>
-      {invitation.course && <p>「{invitation.course.name}」講座への招待です。</p>}
-      <button onClick={handleRegister} disabled={pending}>
-        パスキーを登録
-      </button>
+      <div className="card" style={{ width: '100%', textAlign: 'left' }}>
+        <p>
+          氏名: <strong>{invitation.name}</strong>
+        </p>
+        <p>
+          メール: <strong>{invitation.email}</strong>
+        </p>
+        {invitation.course && (
+          <p className="notice">
+            「{invitation.course.name}」講座への招待です。登録すると、この講座のメンバーとして参加します。
+          </p>
+        )}
+        <button onClick={handleRegister} disabled={pending} style={{ width: '100%', marginTop: 'var(--space-2)' }}>
+          パスキーを登録
+        </button>
+      </div>
     </main>
   );
 }

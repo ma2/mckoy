@@ -13,6 +13,9 @@ import {
   type Member,
 } from '../lib/courses';
 
+const roleLabel: Record<string, string> = { instructor: '講師', student: '生徒' };
+const statusLabel: Record<string, string> = { pending: '承認待ち', active: '参加中', rejected: '拒否済み' };
+
 /**
  * 講座詳細画面。誰が見ても名称・説明・小説一覧等へのリンクは出るが、
  * 編集フォーム・メンバー管理・生徒招待は講師/管理者のみ。canManageの判定は
@@ -105,88 +108,106 @@ export default function CourseDetail() {
 
   if (!course) {
     return (
-      <main className="centered">
+      <main className="page">
         <p>読み込み中...</p>
       </main>
     );
   }
 
   return (
-    <main className="centered">
+    <main className="page">
       <h1>{course.name}</h1>
       <p>
         <Link to={`/courses/${id}/novels`}>小説一覧</Link>
-        {' | '}
+        {' ・ '}
         <Link to={`/courses/${id}/assignments`}>課題</Link>
-        {' | '}
+        {' ・ '}
         <Link to={`/courses/${id}/announcements`}>お知らせ</Link>
       </p>
-      {message && <p>{message}</p>}
+      {message && <p className="notice">{message}</p>}
 
       {!canManage && (
-        <>
-          <p>{course.description}</p>
+        <div className="card">
+          <p>{course.description || '説明はまだ登録されていません。'}</p>
           <button onClick={handleJoin}>参加申請</button>
-        </>
+        </div>
       )}
 
       {canManage && (
         <>
-          <form onSubmit={handleUpdate} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            <label>
-              講座名
-              <br />
-              <input value={name} onChange={(e) => setName(e.target.value)} required />
-            </label>
-            <label>
-              説明
-              <br />
-              <textarea value={description} onChange={(e) => setDescription(e.target.value)} />
-            </label>
-            <button type="submit">更新</button>
-          </form>
+          <div className="card">
+            <form onSubmit={handleUpdate}>
+              <label className="field">
+                講座名
+                <input value={name} onChange={(e) => setName(e.target.value)} required />
+              </label>
+              <label className="field">
+                説明
+                <textarea value={description} onChange={(e) => setDescription(e.target.value)} />
+              </label>
+              <button type="submit">更新</button>
+            </form>
+          </div>
 
           <h2>メンバー</h2>
-          <ul>
-            {members?.map((m) => (
-              <li key={m.id}>
-                {m.userName} ({m.userEmail}) — {m.role} / {m.status}
-                {m.status === 'pending' && (
-                  <>
-                    {' '}
-                    <button onClick={() => handleApprove(m.id)}>承認</button>
-                    <button onClick={() => handleReject(m.id)}>拒否</button>
-                  </>
-                )}
-              </li>
-            ))}
-          </ul>
+          {!members || members.length === 0 ? (
+            <p className="empty-state">まだメンバーがいません。</p>
+          ) : (
+            <ul className="entry-list">
+              {members.map((m) => (
+                <li
+                  key={m.id}
+                  className="entry-list__item"
+                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                >
+                  <div>
+                    <h3>{m.userName}</h3>
+                    <p className="entry-list__meta">{m.userEmail}</p>
+                    <span className="badge" style={{ marginRight: 'var(--space-2)' }}>
+                      {roleLabel[m.role] ?? m.role}
+                    </span>
+                    <span className={m.status === 'active' ? 'badge badge-accent' : 'badge'}>
+                      {statusLabel[m.status] ?? m.status}
+                    </span>
+                  </div>
+                  {m.status === 'pending' && (
+                    <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                      <button onClick={() => handleApprove(m.id)}>承認</button>
+                      <button className="btn-danger" onClick={() => handleReject(m.id)}>
+                        拒否
+                      </button>
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
 
           <h2>生徒を招待</h2>
-          <form onSubmit={handleInvite} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            <label>
-              氏名
-              <br />
-              <input value={inviteName} onChange={(e) => setInviteName(e.target.value)} required />
-            </label>
-            <label>
-              メールアドレス
-              <br />
-              <input type="email" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} required />
-            </label>
-            <button type="submit">招待URLを発行</button>
-          </form>
-          {invitationUrl && (
-            <p>
-              招待URL: <code>{invitationUrl}</code>
-            </p>
-          )}
+          <div className="card">
+            <form onSubmit={handleInvite}>
+              <label className="field">
+                氏名
+                <input value={inviteName} onChange={(e) => setInviteName(e.target.value)} required />
+              </label>
+              <label className="field">
+                メールアドレス
+                <input type="email" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} required />
+              </label>
+              <button type="submit">招待URLを発行</button>
+            </form>
+            {invitationUrl && (
+              <p className="notice" style={{ marginTop: 'var(--space-4)' }}>
+                招待URL: <code>{invitationUrl}</code>
+              </p>
+            )}
+          </div>
         </>
       )}
 
-      <p>
-        <Link to="/courses">講座一覧へ戻る</Link>
-      </p>
+      <Link className="back-link" to="/courses">
+        講座一覧へ戻る
+      </Link>
     </main>
   );
 }

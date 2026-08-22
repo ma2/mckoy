@@ -37,38 +37,36 @@ export default function NovelNew() {
   }
 
   return (
-    <main className="centered">
+    <main className="page">
       <h1>小説を投稿</h1>
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-        <label>
-          タイトル
-          <br />
-          <input value={title} onChange={(e) => setTitle(e.target.value)} required />
-        </label>
-        <label>
-          本文
-          <br />
-          <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={12} required />
-        </label>
-        <label>
-          タグ（カンマ区切り）
-          <br />
-          <input value={tags} onChange={(e) => setTags(e.target.value)} />
-        </label>
-        <label>
-          公開範囲
-          <br />
-          <select value={visibility} onChange={(e) => setVisibility(e.target.value as NovelVisibility)}>
-            <option value="instructors">講師のみ</option>
-            <option value="course_students">講座メンバー</option>
-            <option value="all_users">全員</option>
-          </select>
-        </label>
-        <button type="submit" disabled={pending}>
-          投稿
-        </button>
-      </form>
-      {error && <p className="error">{error}</p>}
+      <div className="card">
+        <form onSubmit={handleSubmit}>
+          <label className="field">
+            タイトル
+            <input value={title} onChange={(e) => setTitle(e.target.value)} required />
+          </label>
+          <label className="field">
+            本文
+            <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={14} required />
+          </label>
+          <label className="field">
+            タグ（カンマ区切り）
+            <input value={tags} onChange={(e) => setTags(e.target.value)} placeholder="例: ファンタジー, 短編" />
+          </label>
+          <label className="field">
+            公開範囲
+            <select value={visibility} onChange={(e) => setVisibility(e.target.value as NovelVisibility)}>
+              <option value="instructors">講師のみ</option>
+              <option value="course_students">講座メンバー</option>
+              <option value="all_users">全員</option>
+            </select>
+          </label>
+          {error && <p className="error">{error}</p>}
+          <button type="submit" disabled={pending}>
+            投稿
+          </button>
+        </form>
+      </div>
     </main>
   );
 }

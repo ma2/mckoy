@@ -112,7 +112,7 @@ export default function NovelDetail() {
 
   if (notFound) {
     return (
-      <main className="centered">
+      <main className="page">
         <p className="error">見つからないか、閲覧権限がありません。</p>
       </main>
     );
@@ -120,97 +120,116 @@ export default function NovelDetail() {
 
   if (!novel) {
     return (
-      <main className="centered">
+      <main className="page">
         <p>読み込み中...</p>
       </main>
     );
   }
 
   return (
-    <main className="centered">
+    <main className="page">
       <h1>{novel.title}</h1>
-      <p>
-        公開範囲: {visibilityLabel[novel.visibility]}
-        {novel.tags.length > 0 && <> / タグ: {novel.tags.join(', ')}</>}
-      </p>
+      <div style={{ marginBottom: 'var(--space-4)' }}>
+        <span className="badge" style={{ marginRight: 'var(--space-2)' }}>
+          {visibilityLabel[novel.visibility]}
+        </span>
+        {novel.tags.map((tag) => (
+          <span className="badge badge-accent" key={tag} style={{ marginRight: 'var(--space-2)' }}>
+            {tag}
+          </span>
+        ))}
+      </div>
       {error && <p className="error">{error}</p>}
 
-      {!isAuthor && <p style={{ whiteSpace: 'pre-wrap' }}>{novel.body}</p>}
+      {!isAuthor && (
+        <div className="card" style={{ fontFamily: 'var(--font-display)', fontSize: '1.05rem', whiteSpace: 'pre-wrap' }}>
+          {novel.body}
+        </div>
+      )}
 
       {isAuthor && (
-        <form onSubmit={handleUpdate} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          <label>
-            タイトル
-            <br />
-            <input value={title} onChange={(e) => setTitle(e.target.value)} required />
-          </label>
-          <label>
-            本文
-            <br />
-            <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={12} required />
-          </label>
-          <label>
-            タグ（カンマ区切り）
-            <br />
-            <input value={tags} onChange={(e) => setTags(e.target.value)} />
-          </label>
-          <label>
-            公開範囲
-            <br />
-            <select value={visibility} onChange={(e) => setVisibility(e.target.value as NovelVisibility)}>
-              <option value="instructors">講師のみ</option>
-              <option value="course_students">講座メンバー</option>
-              <option value="all_users">全員</option>
-            </select>
-          </label>
-          <button type="submit">更新</button>
-        </form>
+        <div className="card">
+          <form onSubmit={handleUpdate}>
+            <label className="field">
+              タイトル
+              <input value={title} onChange={(e) => setTitle(e.target.value)} required />
+            </label>
+            <label className="field">
+              本文
+              <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={14} required />
+            </label>
+            <label className="field">
+              タグ（カンマ区切り）
+              <input value={tags} onChange={(e) => setTags(e.target.value)} />
+            </label>
+            <label className="field">
+              公開範囲
+              <select value={visibility} onChange={(e) => setVisibility(e.target.value as NovelVisibility)}>
+                <option value="instructors">講師のみ</option>
+                <option value="course_students">講座メンバー</option>
+                <option value="all_users">全員</option>
+              </select>
+            </label>
+            <button type="submit">更新</button>
+          </form>
+        </div>
       )}
 
       {canDelete && (
-        <div>
-          <label>
+        <div className="card" style={{ borderColor: 'var(--danger)' }}>
+          <label className="field">
             削除コメント（任意）
-            <br />
             <input value={deleteComment} onChange={(e) => setDeleteComment(e.target.value)} />
           </label>
-          <br />
-          <button onClick={handleDelete}>削除</button>
+          <button className="btn-danger" onClick={handleDelete}>
+            この小説を削除
+          </button>
         </div>
       )}
 
       <h2>改訂履歴</h2>
-      <ul>
-        {revisions.map((r) => (
-          <li key={r.id}>
-            {r.createdAt} — {r.title}
-            {r.revisionComment && <>（{r.revisionComment}）</>}
-          </li>
-        ))}
-      </ul>
-
-      <h2>コメント</h2>
-      <ul>
-        {comments.map((c) => (
-          <li key={c.id}>
-            <strong>{c.userName}</strong>: {c.body}
-          </li>
-        ))}
-      </ul>
-      {canComment && (
-        <form onSubmit={handleAddComment} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          <label>
-            コメント
-            <br />
-            <textarea value={newComment} onChange={(e) => setNewComment(e.target.value)} required />
-          </label>
-          <button type="submit">コメントを投稿</button>
-        </form>
+      {revisions.length === 0 ? (
+        <p className="empty-state">改訂履歴はありません。</p>
+      ) : (
+        <ul className="entry-list">
+          {revisions.map((r) => (
+            <li key={r.id} className="entry-list__item">
+              <p className="entry-list__meta">{r.createdAt}</p>
+              <h3>{r.title}</h3>
+              {r.revisionComment && <p>{r.revisionComment}</p>}
+            </li>
+          ))}
+        </ul>
       )}
 
-      <p>
-        <Link to={`/courses/${novel.courseId}/novels`}>小説一覧へ戻る</Link>
-      </p>
+      <h2>コメント</h2>
+      {comments.length === 0 ? (
+        <p className="empty-state">まだコメントはありません。</p>
+      ) : (
+        <ul className="entry-list">
+          {comments.map((c) => (
+            <li key={c.id} className="entry-list__item">
+              <p className="entry-list__meta">{c.userName}</p>
+              <p style={{ margin: 0 }}>{c.body}</p>
+            </li>
+          ))}
+        </ul>
+      )}
+      {canComment && (
+        <div className="card">
+          <form onSubmit={handleAddComment}>
+            <label className="field">
+              コメント
+              <textarea value={newComment} onChange={(e) => setNewComment(e.target.value)} required />
+            </label>
+            <button type="submit">コメントを投稿</button>
+          </form>
+        </div>
+      )}
+
+      <Link className="back-link" to={`/courses/${novel.courseId}/novels`}>
+        小説一覧へ戻る
+      </Link>
     </main>
   );
 }

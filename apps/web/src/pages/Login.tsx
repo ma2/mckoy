@@ -26,11 +26,14 @@ export default function Login() {
 
   return (
     <main className="centered">
-      <img src="/logo.svg" alt="" width={56} height={56} />
+      <img src="/logo.svg" alt="" width={64} height={64} />
       <h1>Mckoy</h1>
-      <button onClick={handleLogin} disabled={pending}>
-        パスキーでログイン
-      </button>
+      <p style={{ color: 'var(--text-muted)', marginTop: '-0.75rem' }}>小説創作講座のための招待制プラットフォーム</p>
+      <div className="card" style={{ width: '100%' }}>
+        <button onClick={handleLogin} disabled={pending} style={{ width: '100%' }}>
+          パスキーでログイン
+        </button>
+      </div>
       {error && <p className="error">{error}</p>}
     </main>
   );

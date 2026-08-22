@@ -1,42 +1,34 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
-import { api } from '../lib/api';
 
-/** ログイン後のトップ画面。自分の権限（管理者/講師資格）と、各機能への導線を表示する。 */
+/** ログイン後のトップ画面。自分の権限（管理者/講師資格）と、主要機能への導線を表示する。 */
 export default function Home() {
-  const { state, refresh } = useAuth();
-  const navigate = useNavigate();
+  const { state } = useAuth();
 
   if (state.status !== 'authenticated') return null;
   const { user } = state;
 
-  async function handleLogout() {
-    await api.post('/auth/logout');
-    await refresh();
-    navigate('/login', { replace: true });
-  }
-
   return (
-    <main className="centered">
-      <img src="/logo.svg" alt="Mckoy" width={40} height={40} />
+    <main className="page">
       <h1>ようこそ、{user.name} さん</h1>
-      <ul>
-        <li>メール: {user.email}</li>
-        <li>管理者: {user.isAdmin ? 'はい' : 'いいえ'}</li>
-        <li>講師資格: {user.canTeach ? 'はい' : 'いいえ'}</li>
+      <div className="card">
+        <p style={{ marginBottom: 'var(--space-2)' }}>{user.email}</p>
+        <span className="badge" style={{ marginRight: 'var(--space-2)' }}>
+          管理者: {user.isAdmin ? 'はい' : 'いいえ'}
+        </span>
+        <span className="badge">講師資格: {user.canTeach ? 'はい' : 'いいえ'}</span>
+      </div>
+
+      <ul className="entry-list">
+        <li className="entry-list__item">
+          <Link to="/courses">講座一覧</Link>
+          <p className="entry-list__meta">参加中の講座を確認したり、新しい講座に参加申請します。</p>
+        </li>
+        <li className="entry-list__item">
+          <Link to="/passkeys">パスキー管理</Link>
+          <p className="entry-list__meta">ログインに使うパスキーの追加・削除ができます。</p>
+        </li>
       </ul>
-      <p>
-        <Link to="/passkeys">パスキー管理</Link>
-      </p>
-      <p>
-        <Link to="/courses">講座一覧</Link>
-      </p>
-      {user.isAdmin && (
-        <p>
-          <Link to="/admin/invitations">招待管理</Link>
-        </p>
-      )}
-      <button onClick={handleLogout}>ログアウト</button>
     </main>
   );
 }

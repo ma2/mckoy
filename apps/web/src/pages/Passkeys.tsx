@@ -40,20 +40,31 @@ export default function Passkeys() {
   }
 
   return (
-    <main className="centered">
+    <main className="page">
       <h1>パスキー管理</h1>
-      <ul>
-        {passkeys.map((p) => (
-          <li key={p.id}>
-            {p.name ?? '(名前未設定)'} — 登録日: {p.createdAt}{' '}
-            <button onClick={() => handleDelete(p.id)}>削除</button>
-          </li>
-        ))}
-      </ul>
-      <button onClick={handleAdd}>パスキーを追加</button>
       {error && <p className="error">{error}</p>}
+      {passkeys.length === 0 ? (
+        <p className="empty-state">登録済みのパスキーはありません。</p>
+      ) : (
+        <ul className="entry-list">
+          {passkeys.map((p) => (
+            <li key={p.id} className="entry-list__item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <h3>{p.name ?? '(名前未設定)'}</h3>
+                <p className="entry-list__meta">登録日: {p.createdAt}</p>
+              </div>
+              <button className="btn-danger" onClick={() => handleDelete(p.id)}>
+                削除
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <button onClick={handleAdd}>パスキーを追加</button>
       <p>
-        <Link to="/">ホームへ戻る</Link>
+        <Link className="back-link" to="/">
+          ホームへ戻る
+        </Link>
       </p>
     </main>
   );
