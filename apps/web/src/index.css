@@ -1,27 +1,421 @@
+/* ==========================================================================
+   Mckoy デザインシステム
+   文芸誌・書籍の組版を思わせるエディトリアルなトーン。
+   見出し: Shippori Mincho（明朝体）/ 本文・UI: Zen Kaku Gothic New
+   カラー: ロゴの紺（--primary）とテラコッタ（--accent）を基調にする。
+   ========================================================================== */
+
 :root {
   color-scheme: light dark;
-  font-family: system-ui, -apple-system, "Hiragino Sans", sans-serif;
+
+  --font-display: "Shippori Mincho", "Hiragino Mincho ProN", serif;
+  --font-body: "Zen Kaku Gothic New", "Hiragino Sans", system-ui, sans-serif;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-12: 3rem;
+
+  /* ライトテーマ（デフォルト） */
+  --bg: #faf6ee;
+  --bg-elevated: #fffdf9;
+  --bg-sunken: #f1ead9;
+  --text: #221f1a;
+  --text-muted: #756c5c;
+  --border: #e3d9c2;
+  --border-strong: #cdbf9e;
+  --primary: #1d3a70;
+  --primary-hover: #16294f;
+  --primary-contrast: #fdfbf6;
+  --accent: #b6612f;
+  --accent-hover: #954f26;
+  --danger: #a3352b;
+  --danger-bg: #fbe9e5;
+  --focus-ring: rgba(29, 58, 112, 0.35);
+  --shadow: 0 1px 2px rgba(40, 32, 15, 0.06), 0 8px 24px -12px rgba(40, 32, 15, 0.18);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14171f;
+    --bg-elevated: #1b1f29;
+    --bg-sunken: #10131a;
+    --text: #ece7da;
+    --text-muted: #9b9788;
+    --border: #2b3040;
+    --border-strong: #3c4257;
+    --primary: #8fabdc;
+    --primary-hover: #aec2e6;
+    --primary-contrast: #10131a;
+    --accent: #e2925c;
+    --accent-hover: #eba878;
+    --danger: #f0938a;
+    --danger-bg: #3a2420;
+    --focus-ring: rgba(143, 171, 220, 0.4);
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 28px -14px rgba(0, 0, 0, 0.6);
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
 }
 
 body {
-  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  line-height: 1.35;
+  margin: 0 0 var(--space-4);
+  letter-spacing: 0.01em;
+}
+
+h1 {
+  font-size: 1.75rem;
+}
+
+h2 {
+  font-size: 1.2rem;
+  margin-top: var(--space-8);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--border);
+}
+
+p {
+  margin: 0 0 var(--space-3);
+}
+
+a {
+  color: var(--primary);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* ---------- レイアウト ---------- */
+
+.page {
+  max-width: 46rem;
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-4) var(--space-12);
 }
 
 .centered {
-  max-width: 28rem;
+  max-width: 24rem;
   margin: 4rem auto;
-  padding: 1.5rem;
+  padding: var(--space-6);
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  align-items: center;
+  gap: var(--space-4);
+  text-align: center;
 }
+
+.centered form,
+.centered .field {
+  width: 100%;
+  text-align: left;
+}
+
+/* ---------- 常設ヘッダー ---------- */
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-6);
+  background: var(--bg-elevated);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.app-header__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--text);
+}
+
+.app-header__brand:hover {
+  text-decoration: none;
+}
+
+.app-header__brand span {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 600;
+}
+
+.app-header__nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.app-header__nav a {
+  color: var(--text-muted);
+  font-size: 0.92rem;
+}
+
+.app-header__nav a:hover,
+.app-header__nav a.active {
+  color: var(--primary);
+}
+
+.app-header__user {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: 0.88rem;
+  color: var(--text-muted);
+}
+
+/* ---------- カード / リスト ---------- */
+
+.card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  padding: var(--space-6);
+  margin-bottom: var(--space-6);
+}
+
+.entry-list {
+  list-style: none;
+  margin: 0 0 var(--space-6);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.entry-list__item {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+}
+
+.entry-list__item h3 {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 1rem;
+  margin: 0 0 var(--space-1);
+}
+
+.entry-list__meta {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.empty-state {
+  color: var(--text-muted);
+  font-style: normal;
+  padding: var(--space-6);
+  text-align: center;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-md);
+}
+
+/* ---------- フォーム ---------- */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-bottom: var(--space-4);
+}
+
+.field span {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.checkbox-field {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 0.92rem;
+  margin-bottom: var(--space-3);
+}
+
+label {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+input:not([type="checkbox"]),
+textarea,
+select {
+  display: block;
+  width: 100%;
+  margin-top: var(--space-1);
+  padding: 0.6rem 0.75rem;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+input[type="checkbox"] {
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--primary);
+}
+
+textarea {
+  resize: vertical;
+  min-height: 6rem;
+  line-height: 1.6;
+}
+
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+button:focus-visible,
+a:focus-visible {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+/* ---------- ボタン ---------- */
 
 button {
-  padding: 0.6rem 1rem;
-  font-size: 1rem;
+  font-family: var(--font-body);
+  font-size: 0.92rem;
+  font-weight: 500;
+  padding: 0.55rem 1.1rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--primary);
+  background: var(--primary);
+  color: var(--primary-contrast);
   cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.1s ease, opacity 0.15s ease;
 }
 
+button:hover {
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
+}
+
+button:active {
+  transform: translateY(1px);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+button.btn-secondary {
+  background: transparent;
+  color: var(--primary);
+}
+
+button.btn-secondary:hover {
+  background: var(--bg-sunken);
+}
+
+button.btn-danger {
+  background: transparent;
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+button.btn-danger:hover {
+  background: var(--danger-bg);
+}
+
+/* 一覧内の小さいアクションボタン（承認/拒否/削除など） */
+.entry-list__item button,
+li button {
+  padding: 0.3rem 0.7rem;
+  font-size: 0.82rem;
+}
+
+/* ---------- バッジ / タグ ---------- */
+
+.badge {
+  display: inline-block;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  background: var(--bg-sunken);
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  border: 1px solid var(--border);
+}
+
+.badge-accent {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+/* ---------- メッセージ ---------- */
+
 .error {
-  color: #c00;
+  color: var(--danger);
+  background: var(--danger-bg);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-3);
+  font-size: 0.9rem;
+}
+
+.notice {
+  color: var(--text);
+  background: var(--bg-sunken);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-3);
+  font-size: 0.9rem;
+}
+
+/* ---------- パンくず的な戻るリンク ---------- */
+
+.back-link {
+  display: inline-block;
+  margin-top: var(--space-6);
+  font-size: 0.88rem;
+  color: var(--text-muted);
+}
+
+code {
+  font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+  background: var(--bg-sunken);
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  word-break: break-all;
 }

@@ -14,13 +14,22 @@ import NovelDetail from './pages/NovelDetail';
 import CourseAssignments from './pages/CourseAssignments';
 import CourseAnnouncements from './pages/CourseAnnouncements';
 import AdminInvitations from './pages/AdminInvitations';
+import AppHeader from './components/AppHeader';
 
-/** 未認証なら/loginへリダイレクトする。認証状態の確認中は簡易的なローディング表示を出す。 */
+/**
+ * 未認証なら/loginへリダイレクトする。認証済みなら常設ヘッダー（AppHeader）を
+ * 付けて子要素を描画する。認証状態の確認中は簡易的なローディング表示を出す。
+ */
 function RequireAuth({ children }: { children: ReactElement }) {
   const { state } = useAuth();
-  if (state.status === 'loading') return <p>読み込み中...</p>;
+  if (state.status === 'loading') return <p className="centered">読み込み中...</p>;
   if (state.status === 'unauthenticated') return <Navigate to="/login" replace />;
-  return children;
+  return (
+    <>
+      <AppHeader />
+      {children}
+    </>
+  );
 }
 
 /**

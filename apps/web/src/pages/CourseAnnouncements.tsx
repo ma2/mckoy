@@ -45,36 +45,40 @@ export default function CourseAnnouncements() {
   }
 
   return (
-    <main className="centered">
+    <main className="page">
       <h1>お知らせ</h1>
       {error && <p className="error">{error}</p>}
-      <ul>
-        {announcements.map((a) => (
-          <li key={a.id}>
-            <strong>{a.title}</strong>
-            <p style={{ whiteSpace: 'pre-wrap' }}>{a.body}</p>
-          </li>
-        ))}
-      </ul>
-      {canManage && (
-        <form onSubmit={handleCreate} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          <h2>お知らせを作成</h2>
-          <label>
-            タイトル
-            <br />
-            <input value={title} onChange={(e) => setTitle(e.target.value)} required />
-          </label>
-          <label>
-            内容
-            <br />
-            <textarea value={body} onChange={(e) => setBody(e.target.value)} required />
-          </label>
-          <button type="submit">作成</button>
-        </form>
+      {announcements.length === 0 ? (
+        <p className="empty-state">まだお知らせはありません。</p>
+      ) : (
+        <ul className="entry-list">
+          {announcements.map((a) => (
+            <li key={a.id} className="entry-list__item">
+              <h3>{a.title}</h3>
+              <p style={{ whiteSpace: 'pre-wrap', marginBottom: 0 }}>{a.body}</p>
+            </li>
+          ))}
+        </ul>
       )}
-      <p>
-        <Link to={`/courses/${courseId}`}>講座詳細へ戻る</Link>
-      </p>
+      {canManage && (
+        <div className="card">
+          <h2 style={{ marginTop: 0 }}>お知らせを作成</h2>
+          <form onSubmit={handleCreate}>
+            <label className="field">
+              タイトル
+              <input value={title} onChange={(e) => setTitle(e.target.value)} required />
+            </label>
+            <label className="field">
+              内容
+              <textarea value={body} onChange={(e) => setBody(e.target.value)} required />
+            </label>
+            <button type="submit">作成</button>
+          </form>
+        </div>
+      )}
+      <Link className="back-link" to={`/courses/${courseId}`}>
+        講座詳細へ戻る
+      </Link>
     </main>
   );
 }

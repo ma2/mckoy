@@ -24,24 +24,33 @@ export default function NovelList() {
   }, [courseId]);
 
   return (
-    <main className="centered">
-      <h1>小説一覧</h1>
-      {canPost && (
-        <p>
-          <Link to={`/courses/${courseId}/novels/new`}>小説を投稿</Link>
-        </p>
+    <main className="page">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+        <h1>小説一覧</h1>
+        {canPost && <Link to={`/courses/${courseId}/novels/new`}>＋ 小説を投稿</Link>}
+      </div>
+      {novels.length === 0 ? (
+        <p className="empty-state">まだ小説が投稿されていません。</p>
+      ) : (
+        <ul className="entry-list">
+          {novels.map((novel) => (
+            <li key={novel.id} className="entry-list__item">
+              <h3>
+                <Link to={`/novels/${novel.id}`}>{novel.title}</Link>
+              </h3>
+              <span className="badge">{visibilityLabel[novel.visibility]}</span>
+              {novel.tags.map((tag) => (
+                <span className="badge badge-accent" key={tag} style={{ marginLeft: 'var(--space-2)' }}>
+                  {tag}
+                </span>
+              ))}
+            </li>
+          ))}
+        </ul>
       )}
-      <ul>
-        {novels.map((novel) => (
-          <li key={novel.id}>
-            <Link to={`/novels/${novel.id}`}>{novel.title}</Link> ({visibilityLabel[novel.visibility]})
-            {novel.tags.length > 0 && <> — タグ: {novel.tags.join(', ')}</>}
-          </li>
-        ))}
-      </ul>
-      <p>
-        <Link to={`/courses/${courseId}`}>講座詳細へ戻る</Link>
-      </p>
+      <Link className="back-link" to={`/courses/${courseId}`}>
+        講座詳細へ戻る
+      </Link>
     </main>
   );
 }

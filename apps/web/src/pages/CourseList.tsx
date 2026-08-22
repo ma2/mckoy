@@ -31,25 +31,38 @@ export default function CourseList() {
   const canCreate = state.status === 'authenticated' && (state.user.isAdmin || state.user.canTeach);
 
   return (
-    <main className="centered">
-      <h1>講座一覧</h1>
-      {canCreate && (
-        <p>
-          <Link to="/courses/new">新しい講座を作成</Link>
-        </p>
+    <main className="page">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+        <h1>講座一覧</h1>
+        {canCreate && <Link to="/courses/new">＋ 新しい講座を作成</Link>}
+      </div>
+      {message && <p className="notice">{message}</p>}
+      {courses.length === 0 ? (
+        <p className="empty-state">まだ講座がありません。</p>
+      ) : (
+        <ul className="entry-list">
+          {courses.map((course) => (
+            <li
+              key={course.id}
+              className="entry-list__item"
+              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+            >
+              <div>
+                <h3>
+                  <Link to={`/courses/${course.id}`}>{course.name}</Link>
+                </h3>
+                {course.description && <p className="entry-list__meta">{course.description}</p>}
+              </div>
+              <button className="btn-secondary" onClick={() => handleJoin(course.id)}>
+                参加申請
+              </button>
+            </li>
+          ))}
+        </ul>
       )}
-      {message && <p>{message}</p>}
-      <ul>
-        {courses.map((course) => (
-          <li key={course.id}>
-            <Link to={`/courses/${course.id}`}>{course.name}</Link>{' '}
-            <button onClick={() => handleJoin(course.id)}>参加申請</button>
-          </li>
-        ))}
-      </ul>
-      <p>
-        <Link to="/">ホームへ戻る</Link>
-      </p>
+      <Link className="back-link" to="/">
+        ホームへ戻る
+      </Link>
     </main>
   );
 }

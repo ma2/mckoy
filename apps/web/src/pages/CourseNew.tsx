@@ -25,24 +25,24 @@ export default function CourseNew() {
   }
 
   return (
-    <main className="centered">
+    <main className="page">
       <h1>新しい講座を作成</h1>
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-        <label>
-          講座名
-          <br />
-          <input value={name} onChange={(e) => setName(e.target.value)} required />
-        </label>
-        <label>
-          説明
-          <br />
-          <textarea value={description} onChange={(e) => setDescription(e.target.value)} />
-        </label>
-        <button type="submit" disabled={pending}>
-          作成
-        </button>
-      </form>
-      {error && <p className="error">{error}</p>}
+      <div className="card">
+        <form onSubmit={handleSubmit}>
+          <label className="field">
+            講座名
+            <input value={name} onChange={(e) => setName(e.target.value)} required />
+          </label>
+          <label className="field">
+            説明
+            <textarea value={description} onChange={(e) => setDescription(e.target.value)} />
+          </label>
+          {error && <p className="error">{error}</p>}
+          <button type="submit" disabled={pending}>
+            作成
+          </button>
+        </form>
+      </div>
     </main>
   );
 }
