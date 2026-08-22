@@ -1,3 +1,7 @@
+// `invitations` テーブルへのデータアクセス。すべてのアカウントはこの行を経由して
+// 作成される（仕様書 §5 参照）。講座に紐付かない招待（管理者・講師付与、course_idはnull）と、
+// 講座紐付きの招待（生徒招待、登録時にactive membershipを付与）の2種類がある。
+
 export type InvitationRow = {
   id: string;
   email: string;
@@ -14,10 +18,12 @@ export type InvitationRow = {
   created_at: string;
 };
 
+/** トークン平文のSHA-256ハッシュから招待を検索する（平文はDBに保存しない）。 */
 export async function getInvitationByTokenHash(db: D1Database, tokenHash: string): Promise<InvitationRow | null> {
   return db.prepare('SELECT * FROM invitations WHERE token_hash = ?').bind(tokenHash).first<InvitationRow>();
 }
 
+/** 招待行を新規作成する。トークン生成込みの上位ラッパーは auth/invitation.ts の issueInvitation() を参照。 */
 export async function createInvitation(
   db: D1Database,
   params: {
@@ -54,11 +60,12 @@ export async function createInvitation(
     .run();
 }
 
+/** 登録完了時に招待を使用済みにする（一度きりの使用を保証する）。 */
 export async function markInvitationUsed(db: D1Database, id: string): Promise<void> {
   await db.prepare('UPDATE invitations SET used_at = CURRENT_TIMESTAMP WHERE id = ?').bind(id).run();
 }
 
-/** An invitation is usable if it hasn't been used, revoked, or expired. */
+/** 使用済み・失効・期限切れのいずれでもなければ、その招待は利用可能。 */
 export function isInvitationUsable(invitation: InvitationRow, nowIso: string): boolean {
   return invitation.used_at === null && invitation.revoked_at === null && invitation.expires_at > nowIso;
 }

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createCourse } from '../lib/courses';
 
+/** 講座作成画面。作成すると自動的にその講座のactive講師になる（routes/courses.ts 参照）。 */
 export default function CourseNew() {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');

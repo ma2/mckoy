@@ -8,6 +8,9 @@ import { coursesRoute } from './routes/courses';
 import { novelsRoute } from './routes/novels';
 import { requireSession } from './auth/session';
 
+// Honoアプリのエントリポイント。各機能のルートをマウントするだけで、
+// ルーティング自体のロジックはここに書かない。
+
 const app = new Hono<AppEnv>();
 
 app.get('/api/health', (c) => c.json({ ok: true }));

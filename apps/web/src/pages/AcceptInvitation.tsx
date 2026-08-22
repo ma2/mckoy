@@ -6,6 +6,7 @@ import { useAuth } from '../lib/auth';
 
 type InvitationInfo = { name: string; email: string; course: { id: string; name: string } | null };
 
+/** 招待受諾画面。招待内容（氏名・メール・対象講座）を表示し、パスキー登録で新規アカウントを作成する（仕様書 §5.5）。 */
 export default function AcceptInvitation() {
   const { token } = useParams<{ token: string }>();
   const [invitation, setInvitation] = useState<InvitationInfo | null>(null);

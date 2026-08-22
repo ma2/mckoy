@@ -4,6 +4,7 @@ import { useAuth } from '../lib/auth';
 import { getMyMembership } from '../lib/courses';
 import { listAssignments, createAssignment, type Assignment } from '../lib/assignments';
 
+/** 講座内の課題一覧・作成画面。作成フォームはその講座のactive講師/管理者のみ表示する。 */
 export default function CourseAssignments() {
   const { id: courseId } = useParams<{ id: string }>();
   const { state } = useAuth();

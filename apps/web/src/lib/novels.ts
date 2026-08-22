@@ -1,5 +1,8 @@
 import { api } from './api';
 
+// バックエンドの routes/novels.ts（詳細/編集/削除/改訂履歴）と
+// routes/courses.ts（講座内の一覧/投稿）に対応するAPIクライアント。
+
 export type NovelVisibility = 'instructors' | 'course_students' | 'all_users';
 
 export type NovelSummary = {

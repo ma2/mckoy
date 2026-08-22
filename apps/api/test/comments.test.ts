@@ -1,3 +1,5 @@
+// 小説へのコメント投稿権限（対象講座のactive講師/管理者のみ）と、
+// コメント閲覧が小説自体のvisibilityに従うことのテスト。
 import { describe, expect, it } from 'vitest';
 import { env } from 'cloudflare:test';
 import { Hono } from 'hono';
@@ -88,8 +90,8 @@ describe('comment posting authorization', () => {
   });
 
   it('rejects an instructor of a different course, even when the novel is publicly visible', async () => {
-    // Use all_users visibility so the other instructor CAN see the novel --
-    // this isolates the comment-permission check from the novel-visibility check.
+    // visibility=all_usersにして、別講座の講師からも小説自体は見える状態にする
+    // ことで、「コメント投稿権限」のチェックを「小説の可視性」チェックと切り分けて検証する。
     const { app, novelId } = await seedCourseWithNovel('all_users');
     const otherInstructor = await createTestUser();
     const otherCourseId = crypto.randomUUID();

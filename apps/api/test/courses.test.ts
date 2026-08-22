@@ -1,3 +1,5 @@
+// 講座の作成・編集・参加申請・承認/拒否まわりの認可テスト。特に「別講座の講師は
+// 他講座のmembershipを操作できない」ことの検証を重視している（CLAUDE.md参照）。
 import { describe, expect, it } from 'vitest';
 import { env } from 'cloudflare:test';
 import { Hono } from 'hono';
@@ -143,8 +145,8 @@ describe('membership approval authorization', () => {
     });
     const pending = await getMembershipByCourseAndUser(env.DB, courseAId, student.id);
 
-    // courseBOwner IS a legitimate active instructor of courseB, but the
-    // membership id belongs to courseA -- this must still be rejected.
+    // courseBOwnerは講座Bの正当なactive講師だが、対象のmembership idは講座Aのもの
+    // ——このケースは拒否されなければならない。
     const cookie = await loginAs(app, courseBOwner.id);
     const res = await app.request(
       `/courses/${courseBId}/members/${pending!.id}/approve`,

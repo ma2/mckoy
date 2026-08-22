@@ -8,15 +8,18 @@ import { findOrCreateTagIds, setNovelTags, listTagsByNovel } from '../db/tags';
 import { getMembershipByCourseAndUser, isActiveInstructor } from '../db/course_memberships';
 import { createComment, listCommentsByNovel } from '../db/comments';
 
+// 小説そのもの（詳細・編集・削除・改訂履歴）と、小説へのコメントを扱う。
+// 一覧・投稿（`/courses/:id/novels`）は routes/courses.ts が担当する。
+
 export const novelsRoute = new Hono<AppEnv>();
 
 novelsRoute.use('*', requireSession);
 
 /**
- * instructors|course_students visibility requires an ACTIVE course membership;
- * pending grants nothing. The author and admins can always view. A soft-deleted
- * novel is treated as invisible here -- callers check deleted_at separately so
- * they can 404 even for the author (see MCKOY_SPEC.md §12).
+ * 可視性判定の中心ロジック。instructors/course_studentsはactiveな講座membershipが
+ * 必須（pendingでは不可）。作者本人と管理者は常に閲覧可。論理削除された小説は
+ * ここでは判定しない — deleted_atのチェックは呼び出し側で別途行い、作者本人であっても
+ * 404にできるようにする（仕様書 §12）。
  */
 export async function canViewNovel(db: D1Database, user: User, novel: NovelRow): Promise<boolean> {
   if (user.isAdmin) return true;
@@ -28,6 +31,7 @@ export async function canViewNovel(db: D1Database, user: User, novel: NovelRow):
   return novel.visibility === 'instructors' && membership.role === 'instructor';
 }
 
+/** 「存在し、かつ閲覧可能」な小説を取得する共通処理。GET/PATCH/DELETE/revisions/commentsが全てこれを通す。 */
 async function loadVisibleNovel(db: D1Database, user: User, id: string): Promise<NovelRow | null> {
   const novel = await getNovelById(db, id);
   if (!novel) return null;
@@ -36,6 +40,7 @@ async function loadVisibleNovel(db: D1Database, user: User, id: string): Promise
   return novel;
 }
 
+/** DBの行をAPIレスポンス形式（camelCase、タグ配列付き）に変換する。 */
 async function serializeNovel(db: D1Database, novel: NovelRow) {
   return {
     id: novel.id,
@@ -52,12 +57,14 @@ async function serializeNovel(db: D1Database, novel: NovelRow) {
   };
 }
 
+/** 小説詳細。閲覧不可（存在しない/visibility外/削除済みで非管理者）の場合は一律404で存在有無を秘匿する。 */
 novelsRoute.get('/:id', async (c) => {
   const novel = await loadVisibleNovel(c.env.DB, c.get('user'), c.req.param('id'));
   if (!novel) return c.json({ error: 'not_found' }, 404);
   return c.json({ novel: await serializeNovel(c.env.DB, novel) });
 });
 
+/** 小説を編集する。作者本人のみ（管理者にも編集権限は与えない、ユーザーとの合意事項）。編集の度にrevisionを1件残す。 */
 novelsRoute.patch('/:id', async (c) => {
   const user = c.get('user');
   const novel = await loadVisibleNovel(c.env.DB, user, c.req.param('id'));
@@ -87,6 +94,7 @@ novelsRoute.patch('/:id', async (c) => {
   return c.json({ novel: await serializeNovel(c.env.DB, updated!) });
 });
 
+/** 小説を論理削除する。作者本人 または 管理者（モデレーション目的、ユーザーと相談の上で追加した権限）。 */
 novelsRoute.delete('/:id', async (c) => {
   const user = c.get('user');
   const novel = await loadVisibleNovel(c.env.DB, user, c.req.param('id'));
@@ -98,6 +106,7 @@ novelsRoute.delete('/:id', async (c) => {
   return c.body(null, 204);
 });
 
+/** 改訂履歴一覧。閲覧可否は小説本体と同じ判定（loadVisibleNovel）。 */
 novelsRoute.get('/:id/revisions', async (c) => {
   const novel = await loadVisibleNovel(c.env.DB, c.get('user'), c.req.param('id'));
   if (!novel) return c.json({ error: 'not_found' }, 404);
@@ -115,6 +124,7 @@ novelsRoute.get('/:id/revisions', async (c) => {
   });
 });
 
+/** コメント一覧。閲覧可否は小説本体と同じ判定（コメント専用の可視性ルールは持たない）。 */
 novelsRoute.get('/:id/comments', async (c) => {
   const novel = await loadVisibleNovel(c.env.DB, c.get('user'), c.req.param('id'));
   if (!novel) return c.json({ error: 'not_found' }, 404);
@@ -131,14 +141,14 @@ novelsRoute.get('/:id/comments', async (c) => {
   });
 });
 
+/** 小説にコメントを投稿する。対象講座のactive講師 または 管理者のみ（生徒自身はコメントできない）。 */
 novelsRoute.post('/:id/comments', async (c) => {
   const user = c.get('user');
   const novel = await loadVisibleNovel(c.env.DB, user, c.req.param('id'));
   if (!novel) return c.json({ error: 'not_found' }, 404);
 
-  // MCKOY_SPEC.md §13: instructors comment on students' novels in their own
-  // course; since every novel's author is a student, this is equivalent to
-  // "an active instructor of the novel's course" (or an admin).
+  // 仕様書 §13: 講師は「自分が講師として所属する講座の生徒の小説」にコメントできる。
+  // 小説の作者は必ず生徒なので、これは「その小説の講座のactive講師である」ことと同値になる。
   const canComment = user.isAdmin || (await isActiveInstructor(c.env.DB, novel.course_id, user.id));
   if (!canComment) return c.json({ error: 'forbidden' }, 403);
 

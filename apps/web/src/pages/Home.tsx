@@ -2,6 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
 import { api } from '../lib/api';
 
+/** ログイン後のトップ画面。自分の権限（管理者/講師資格）と、各機能への導線を表示する。 */
 export default function Home() {
   const { state, refresh } = useAuth();
   const navigate = useNavigate();

@@ -16,9 +16,12 @@ import type { Bindings } from '../env';
 import { storeChallenge, consumeChallenge } from './challenge';
 import { getPasskeyByCredentialId, listPasskeysByUserId, touchPasskeyUsage } from '../db/passkeys';
 
+// @simplewebauthn/server をラップし、登録・認証それぞれのoptions生成とレスポンス
+//検証をまとめる。独自暗号実装を避け実績あるライブラリを使う方針（仕様書 §24.13）。
+
 type RpConfig = Pick<Bindings, 'RP_ID' | 'RP_NAME' | 'RP_ORIGIN'>;
 
-/** Our internal user.id (a UUID string) doubles as the WebAuthn user handle. */
+/** 内部の user.id（UUID文字列）を、そのままWebAuthnのuser handleとして流用する。 */
 function userHandle(userId: string): Uint8Array<ArrayBuffer> {
   const encoded = new TextEncoder().encode(userId);
   const buffer = new ArrayBuffer(encoded.byteLength);
@@ -26,6 +29,7 @@ function userHandle(userId: string): Uint8Array<ArrayBuffer> {
   return new Uint8Array(buffer);
 }
 
+/** パスキー登録用のオプションを生成し、challengeをDBに保存する。既存パスキーは excludeCredentials で除外する。 */
 export async function createRegistrationOptions(
   db: D1Database,
   env: RpConfig,
@@ -52,6 +56,7 @@ export async function createRegistrationOptions(
   return options;
 }
 
+/** 登録レスポンスを検証する。challengeの消費・署名検証に失敗すればnullを返す（呼び出し側で400扱い）。 */
 export async function verifyRegistration(
   db: D1Database,
   env: RpConfig,
@@ -80,6 +85,7 @@ export async function verifyRegistration(
   };
 }
 
+/** ログイン用のオプションを生成する。allowCredentialsを指定しないことで discoverable credential（メール入力なしログイン）にする。 */
 export async function createAuthenticationOptions(
   db: D1Database,
   env: RpConfig,
@@ -92,6 +98,7 @@ export async function createAuthenticationOptions(
   return options;
 }
 
+/** ログインレスポンスを検証する。credential idからパスキー（＝ユーザー）を特定し、成功したらカウンタを更新する。 */
 export async function verifyAuthentication(
   db: D1Database,
   env: RpConfig,

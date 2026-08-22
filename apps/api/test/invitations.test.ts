@@ -1,3 +1,5 @@
+// 招待の使用可否判定（期限切れ/使用済み/失効）と、講座紐付き招待を受諾した際に
+// active membershipが即座に作られることのテスト。
 import { describe, expect, it } from 'vitest';
 import { env } from 'cloudflare:test';
 import {
@@ -107,7 +109,7 @@ describe('grantCourseMembershipIfInvited', () => {
   it('does nothing when the invitation has no course', async () => {
     const tokenHash = await seedInvitation();
     const invitation = await getInvitationByTokenHash(env.DB, tokenHash);
-    // Should not throw even though there is no course to join.
+    // 参加する講座が無くても例外を投げないことを確認する。
     await expect(grantCourseMembershipIfInvited(env.DB, invitation!, crypto.randomUUID())).resolves.toBeUndefined();
   });
 });

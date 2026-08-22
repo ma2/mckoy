@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
 import { listCourses, joinCourse, type Course } from '../lib/courses';
 
+/** 講座一覧画面。誰でも閲覧・参加申請できる。「新しい講座を作成」は管理者/can_teachのみ表示（実際の可否はサーバー側判定）。 */
 export default function CourseList() {
   const { state } = useAuth();
   const [courses, setCourses] = useState<Course[]>([]);

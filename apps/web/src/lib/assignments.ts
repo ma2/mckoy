@@ -1,5 +1,7 @@
 import { api } from './api';
 
+// 講座の課題。routes/courses.ts の /:id/assignments に対応する。
+
 export type Assignment = {
   id: string;
   title: string;

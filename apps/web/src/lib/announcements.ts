@@ -1,5 +1,7 @@
 import { api } from './api';
 
+// 講座のお知らせ。routes/courses.ts の /:id/announcements に対応する。
+
 export type Announcement = {
   id: string;
   title: string;

@@ -1,3 +1,5 @@
+// 小説の投稿・編集・削除の権限、visibilityの3パターンの挙動、pending membershipの
+// 不可視性、改訂履歴の記録を検証する（CLAUDE.mdの優先認可テスト項目に対応）。
 import { describe, expect, it } from 'vitest';
 import { env } from 'cloudflare:test';
 import { Hono } from 'hono';
@@ -178,11 +180,11 @@ describe('edit and delete authorization', () => {
     const res = await app.request(`/novels/${novelId}`, { method: 'DELETE', headers: { cookie: adminCookie } }, env);
     expect(res.status).toBe(204);
 
-    // Even the author can no longer see it once deleted.
+    // 削除後は作者本人であっても見えなくなる。
     const authorRes = await app.request(`/novels/${novelId}`, { headers: { cookie: studentCookie } }, env);
     expect(authorRes.status).toBe(404);
 
-    // But an admin still can.
+    // 管理者だけは引き続き見える。
     const adminRes = await app.request(`/novels/${novelId}`, { headers: { cookie: adminCookie } }, env);
     expect(adminRes.status).toBe(200);
   });
