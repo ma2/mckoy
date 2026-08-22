@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
-import { getMyMembership } from '../lib/courses';
+import { getCourse, getMyMembership, type Course } from '../lib/courses';
 import { listAssignments, createAssignment, type Assignment } from '../lib/assignments';
 
 /** 講座内の課題一覧・作成画面。作成フォームはその講座のactive講師/管理者のみ表示する。 */
 export default function CourseAssignments() {
   const { id: courseId } = useParams<{ id: string }>();
   const { state } = useAuth();
+  const [course, setCourse] = useState<Course | null>(null);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [canManage, setCanManage] = useState(false);
   const [title, setTitle] = useState('');
@@ -19,6 +20,8 @@ export default function CourseAssignments() {
 
   async function load() {
     if (!courseId) return;
+    const { course } = await getCourse(courseId);
+    setCourse(course);
     const { assignments } = await listAssignments(courseId);
     setAssignments(assignments);
     const { membership } = await getMyMembership(courseId);
@@ -88,7 +91,7 @@ export default function CourseAssignments() {
         </div>
       )}
       <Link className="back-link" to={`/courses/${courseId}`}>
-        講座詳細へ戻る
+        {course ? `${course.name} トップへ` : '講座トップへ'}
       </Link>
     </main>
   );

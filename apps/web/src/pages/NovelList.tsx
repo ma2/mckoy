@@ -54,7 +54,7 @@ export default function NovelList() {
         </ul>
       )}
       <Link className="back-link" to={`/courses/${courseId}`}>
-        講座詳細へ戻る
+        {course ? `${course.name} トップへ` : '講座トップへ'}
       </Link>
     </main>
   );
