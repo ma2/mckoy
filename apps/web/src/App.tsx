@@ -13,6 +13,7 @@ import NovelNew from './pages/NovelNew';
 import NovelDetail from './pages/NovelDetail';
 import CourseAssignments from './pages/CourseAssignments';
 import CourseAnnouncements from './pages/CourseAnnouncements';
+import AdminInvitations from './pages/AdminInvitations';
 
 function RequireAuth({ children }: { children: ReactElement }) {
   const { state } = useAuth();
@@ -105,6 +106,14 @@ export default function App() {
             element={
               <RequireAuth>
                 <CourseAnnouncements />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/admin/invitations"
+            element={
+              <RequireAuth>
+                <AdminInvitations />
               </RequireAuth>
             }
           />

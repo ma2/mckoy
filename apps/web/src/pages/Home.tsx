@@ -29,6 +29,11 @@ export default function Home() {
       <p>
         <Link to="/courses">講座一覧</Link>
       </p>
+      {user.isAdmin && (
+        <p>
+          <Link to="/admin/invitations">招待管理</Link>
+        </p>
+      )}
       <button onClick={handleLogout}>ログアウト</button>
     </main>
   );
