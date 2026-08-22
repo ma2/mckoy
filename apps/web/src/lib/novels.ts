@@ -8,6 +8,7 @@ export type NovelVisibility = 'instructors' | 'course_students' | 'all_users';
 export type NovelSummary = {
   id: string;
   authorId: string;
+  authorName: string;
   title: string;
   visibility: NovelVisibility;
   tags: string[];

@@ -23,10 +23,10 @@ function buildApp() {
   return app;
 }
 
-async function createTestUser(overrides: { isAdmin?: boolean } = {}) {
+async function createTestUser(overrides: { isAdmin?: boolean; name?: string } = {}) {
   return createUser(env.DB, {
     id: crypto.randomUUID(),
-    name: 'Test User',
+    name: overrides.name ?? 'Test User',
     email: `user-${crypto.randomUUID()}@example.com`,
     isAdmin: overrides.isAdmin ?? false,
     canTeach: false,
@@ -139,6 +139,27 @@ describe('novel creation', () => {
       env,
     );
     expect(res.status).toBe(403);
+  });
+});
+
+describe('course novel listing includes the author name (issue #10)', () => {
+  it('reports the posting student\'s name alongside each novel', async () => {
+    const app = buildApp();
+    const instructor = await createTestUser();
+    const courseId = crypto.randomUUID();
+    await createCourse(env.DB, { id: courseId, name: `Course ${crypto.randomUUID()}`, description: null, createdBy: instructor.id });
+    await createMembership(env.DB, { id: crypto.randomUUID(), courseId, userId: instructor.id, role: 'instructor', status: 'active' });
+    const student = await createTestUser({ name: '田中太郎' });
+    await createMembership(env.DB, { id: crypto.randomUUID(), courseId, userId: student.id, role: 'student', status: 'active' });
+
+    const studentCookie = await loginAs(app, student.id);
+    await postNovel(app, studentCookie, courseId, { visibility: 'course_students' });
+
+    const res = await app.request(`/courses/${courseId}/novels`, { headers: { cookie: studentCookie } }, env);
+    const { novels } = await res.json<{ novels: { authorName: string }[] }>();
+
+    expect(novels).toHaveLength(1);
+    expect(novels[0]!.authorName).toBe('田中太郎');
   });
 });
 

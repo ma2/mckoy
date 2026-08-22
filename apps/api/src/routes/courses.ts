@@ -275,6 +275,7 @@ coursesRoute.get('/:id/novels', async (c) => {
       visible.map(async (novel) => ({
         id: novel.id,
         authorId: novel.author_id,
+        authorName: novel.author_name,
         title: novel.title,
         visibility: novel.visibility,
         tags: await listTagsByNovel(c.env.DB, novel.id),
