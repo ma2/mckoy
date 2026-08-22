@@ -18,7 +18,12 @@ function arg(name, fallback) {
 
 const name = arg('name', 'Admin');
 const email = arg('email', 'admin@example.com');
-const rpOrigin = process.env.MCKOY_RP_ORIGIN ?? 'http://localhost:5173';
+const remote = process.argv.includes('--remote');
+const rpOrigin = process.env.MCKOY_RP_ORIGIN ?? (remote ? undefined : 'http://localhost:5173');
+if (remote && !rpOrigin) {
+  console.error('--remote requires MCKOY_RP_ORIGIN to be set (e.g. https://mckoy-api.<subdomain>.workers.dev)');
+  process.exit(1);
+}
 
 const id = randomUUID();
 const token = randomBytes(32).toString('base64url');
@@ -38,8 +43,12 @@ VALUES (${sqlString(id)}, ${sqlString(email)}, ${sqlString(name)}, 1, 1, ${sqlSt
 const tmpFile = join(tmpdir(), `mckoy-seed-admin-${id}.sql`);
 writeFileSync(tmpFile, sql, 'utf8');
 
+const wranglerArgs = remote
+  ? ['wrangler', 'd1', 'execute', 'mckoy_db', '--env', 'production', '--remote', `--file=${tmpFile}`]
+  : ['wrangler', 'd1', 'execute', 'mckoy_db', '--local', `--file=${tmpFile}`];
+
 try {
-  execFileSync('npx', ['wrangler', 'd1', 'execute', 'mckoy_db', '--local', `--file=${tmpFile}`], {
+  execFileSync('npx', wranglerArgs, {
     stdio: 'inherit',
     cwd: new URL('..', import.meta.url),
   });
