@@ -1,3 +1,6 @@
+// `users` テーブルへのデータアクセス。D1の生の行（snake_case、真偽値は0/1）は
+// このモジュール内に留め、呼び出し側にはcamelCaseの `User` 型を返す。
+
 export type UserRow = {
   id: string;
   name: string;
@@ -18,6 +21,7 @@ export type User = {
   updatedAt: string;
 };
 
+/** D1の生の行を、このモジュール外で使うcamelCase形式に変換する。 */
 function toUser(row: UserRow): User {
   return {
     id: row.id,
@@ -35,11 +39,13 @@ export async function getUserById(db: D1Database, id: string): Promise<User | nu
   return row ? toUser(row) : null;
 }
 
+/** アカウント作成前に、そのメールアドレスが既に登録済みか確認するために使う。 */
 export async function getUserByEmail(db: D1Database, email: string): Promise<User | null> {
   const row = await db.prepare('SELECT * FROM users WHERE email = ?').bind(email).first<UserRow>();
   return row ? toUser(row) : null;
 }
 
+/** ユーザー行を作成した後、DB側で計算されるデフォルト値（created_at等）を含めて読み直して返す。 */
 export async function createUser(
   db: D1Database,
   params: { id: string; name: string; email: string; isAdmin: boolean; canTeach: boolean },

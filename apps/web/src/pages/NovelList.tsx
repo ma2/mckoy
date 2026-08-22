@@ -9,6 +9,7 @@ const visibilityLabel: Record<string, string> = {
   all_users: '全員',
 };
 
+/** 講座内の小説一覧（サーバー側でvisibilityによる絞り込み済み）。「小説を投稿」はその講座のactiveな生徒にのみ表示する。 */
 export default function NovelList() {
   const { id: courseId } = useParams<{ id: string }>();
   const [novels, setNovels] = useState<NovelSummary[]>([]);

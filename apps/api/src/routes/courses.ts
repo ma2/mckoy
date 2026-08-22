@@ -17,20 +17,24 @@ import { findOrCreateTagIds, setNovelTags, listTagsByNovel } from '../db/tags';
 import { createAssignment, listAssignmentsByCourse } from '../db/assignments';
 import { createAnnouncement, listAnnouncementsByCourse } from '../db/announcements';
 
+// 講座本体（作成・編集・一覧）、講座内のメンバー管理（参加申請・承認/拒否・招待）、
+// および講座に紐付くサブリソース（小説・課題・お知らせ）の一覧/作成を扱う。
+// `/api/novels/:id` 以下（詳細・編集・削除・コメント）は routes/novels.ts が担当する。
+
 export const coursesRoute = new Hono<AppEnv>();
 
 coursesRoute.use('*', requireSession);
 
+/** 講座編集・メンバー管理などの「講師権限」判定。管理者、またはその講座のactive講師のみtrue。 */
 async function canManageCourse(db: D1Database, user: { isAdmin: boolean; id: string }, courseId: string) {
   return user.isAdmin || isActiveInstructor(db, courseId, user.id);
 }
 
 /**
- * Assignments and announcements are course-internal content: MCKOY_SPEC.md §15
- * states this explicitly for announcements ("only users with an active
- * membership in the course may view them; admins may view/edit all"), and we
- * apply the same rule to assignments for consistency, since the spec doesn't
- * otherwise restrict who can see them and the app has no public content.
+ * 課題・お知らせは講座内限定のコンテンツ: 仕様書 §15 はお知らせについて
+ * 「対象講座のactive membershipを持つユーザーのみ閲覧できる。管理者はすべて閲覧・編集可能」
+ * と明記しており、課題についても仕様に明示の制限はないが同じ扱いに揃えている
+ * （アプリ全体に公開コンテンツが存在しない、という方針と一貫させるため）。
  */
 async function hasActiveMembership(db: D1Database, user: { isAdmin: boolean; id: string }, courseId: string) {
   if (user.isAdmin) return true;
@@ -38,6 +42,7 @@ async function hasActiveMembership(db: D1Database, user: { isAdmin: boolean; id:
   return membership !== null && membership.status === 'active';
 }
 
+/** 講座一覧。ログイン済みなら誰でも閲覧可（参加申請のために講座を選べる必要があるため）。 */
 coursesRoute.get('/', async (c) => {
   const courses = await listCourses(c.env.DB);
   return c.json({
@@ -51,6 +56,7 @@ coursesRoute.get('/', async (c) => {
   });
 });
 
+/** 講座を新規作成する。管理者または can_teach=true のユーザーのみ（仕様書 §17）。 */
 coursesRoute.post('/', async (c) => {
   const user = c.get('user');
   if (!user.isAdmin && !user.canTeach) {
@@ -71,9 +77,8 @@ coursesRoute.post('/', async (c) => {
     }
     throw err;
   }
-  // The creator becomes an active instructor of the course they just created,
-  // since course-edit permission (per MCKOY_SPEC.md §17) comes from an active
-  // instructor membership, not from can_teach alone.
+  // 講座編集の権限（仕様書 §17）はcan_teachだけでは足りず、active instructor
+  // membershipが必要。そのため作成者は、作成した講座のactive講師として即座に登録する。
   await createMembership(c.env.DB, {
     id: crypto.randomUUID(),
     courseId: id,
@@ -86,6 +91,7 @@ coursesRoute.post('/', async (c) => {
   return c.json({ course }, 201);
 });
 
+/** 講座詳細。ログイン済みなら誰でも閲覧可。 */
 coursesRoute.get('/:id', async (c) => {
   const course = await getCourseById(c.env.DB, c.req.param('id'));
   if (!course) return c.json({ error: 'not_found' }, 404);
@@ -100,6 +106,7 @@ coursesRoute.get('/:id', async (c) => {
   });
 });
 
+/** 講座のname/descriptionを更新する。canManageCourseで許可された講師/管理者のみ。 */
 coursesRoute.patch('/:id', async (c) => {
   const user = c.get('user');
   const courseId = c.req.param('id');
@@ -123,6 +130,7 @@ coursesRoute.patch('/:id', async (c) => {
   return c.json({ course: updated });
 });
 
+/** 講座のメンバー一覧（pending含む）。承認待ちを確認できるよう講師/管理者限定にする。 */
 coursesRoute.get('/:id/members', async (c) => {
   const user = c.get('user');
   const courseId = c.req.param('id');
@@ -143,6 +151,11 @@ coursesRoute.get('/:id/members', async (c) => {
   });
 });
 
+/**
+ * 生徒からの参加申請（仕様書 §9.1）。roleは常にstudent固定
+ * （自己申告で講師になることはできない）。pending membershipを作成し、
+ * 講師の承認を待つ。既にmembershipがあれば（pending/active/rejectedいずれでも）再申請不可。
+ */
 coursesRoute.post('/:id/join', async (c) => {
   const user = c.get('user');
   const courseId = c.req.param('id');
@@ -162,6 +175,7 @@ coursesRoute.post('/:id/join', async (c) => {
   return c.json({}, 201);
 });
 
+/** 参加申請の承認/拒否の共通処理。approve/rejectエンドポイントから呼ばれる。 */
 async function setMembershipStatus(c: Context<AppEnv>, status: 'active' | 'rejected') {
   const user = c.get('user');
   const courseId = c.req.param('id');
@@ -172,8 +186,8 @@ async function setMembershipStatus(c: Context<AppEnv>, status: 'active' | 'rejec
   }
 
   const membership = await getMembershipById(c.env.DB, membershipId);
-  // The membership must belong to THIS course -- an instructor of another
-  // course must not be able to act on it even if they somehow know its id.
+  // このmembershipが本当にこの講座のものであることを確認する — 別講座の講師が
+  // membership idさえ知っていれば操作できてしまう、という事態を防ぐための検証。
   if (!membership || membership.course_id !== courseId || membership.status !== 'pending') {
     return c.json({ error: 'not_found' }, 404);
   }
@@ -185,6 +199,7 @@ async function setMembershipStatus(c: Context<AppEnv>, status: 'active' | 'rejec
 coursesRoute.post('/:id/members/:membershipId/approve', (c) => setMembershipStatus(c, 'active'));
 coursesRoute.post('/:id/members/:membershipId/reject', (c) => setMembershipStatus(c, 'rejected'));
 
+/** 講座紐付きの生徒招待を発行する（受諾すると承認不要で即active、仕様書 §9.2）。 */
 coursesRoute.post('/:id/invitations', async (c) => {
   const user = c.get('user');
   const courseId = c.req.param('id');
@@ -212,6 +227,7 @@ coursesRoute.post('/:id/invitations', async (c) => {
   return c.json({ invitationUrl: `${c.env.RP_ORIGIN}/invitations/${token}` }, 201);
 });
 
+/** 呼び出しユーザー自身がその講座で何者か（role/status）を返す。フロントがUI表示を出し分けるために使う自己参照エンドポイント。 */
 coursesRoute.get('/:id/membership', async (c) => {
   const user = c.get('user');
   const courseId = c.req.param('id');
@@ -219,6 +235,7 @@ coursesRoute.get('/:id/membership', async (c) => {
   return c.json({ membership: membership ? { role: membership.role, status: membership.status } : null });
 });
 
+/** 講座内の小説一覧。呼び出しユーザーが見えるもの（visibilityに応じて）だけをフィルタして返す。 */
 coursesRoute.get('/:id/novels', async (c) => {
   const user = c.get('user');
   const courseId = c.req.param('id');
@@ -228,8 +245,8 @@ coursesRoute.get('/:id/novels', async (c) => {
   const novels = await listNovelsByCourse(c.env.DB, courseId);
   const membership = user.isAdmin ? null : await getMembershipByCourseAndUser(c.env.DB, courseId, user.id);
 
-  // Mirrors canViewNovel() in routes/novels.ts, but fetches the caller's
-  // membership once instead of per-novel.
+  // routes/novels.ts の canViewNovel() と同じロジックだが、小説1件ごとにDBへ
+  // 問い合わせるのではなく、呼び出しユーザーのmembershipを1回だけ取得して使い回す。
   const visible = novels.filter((novel) => {
     if (user.isAdmin) return true;
     if (novel.author_id === user.id) return true;
@@ -253,6 +270,7 @@ coursesRoute.get('/:id/novels', async (c) => {
   });
 });
 
+/** 小説を投稿する。対象講座のactiveな生徒membershipが必須（管理者・講師には投稿権限を与えない、仕様書 §17）。 */
 coursesRoute.post('/:id/novels', async (c) => {
   const user = c.get('user');
   const courseId = c.req.param('id');
@@ -308,6 +326,7 @@ coursesRoute.post('/:id/novels', async (c) => {
   );
 });
 
+/** 講座内の課題一覧。閲覧はactive membership（役割問わず）または管理者のみ。 */
 coursesRoute.get('/:id/assignments', async (c) => {
   const user = c.get('user');
   const courseId = c.req.param('id');
@@ -327,6 +346,7 @@ coursesRoute.get('/:id/assignments', async (c) => {
   });
 });
 
+/** 課題を作成する。対象講座の講師/管理者のみ。 */
 coursesRoute.post('/:id/assignments', async (c) => {
   const user = c.get('user');
   const courseId = c.req.param('id');
@@ -352,6 +372,7 @@ coursesRoute.post('/:id/assignments', async (c) => {
   return c.json({}, 201);
 });
 
+/** 講座内のお知らせ一覧。閲覧はactive membership（役割問わず）または管理者のみ（仕様書 §15）。 */
 coursesRoute.get('/:id/announcements', async (c) => {
   const user = c.get('user');
   const courseId = c.req.param('id');
@@ -370,6 +391,7 @@ coursesRoute.get('/:id/announcements', async (c) => {
   });
 });
 
+/** お知らせを作成する。対象講座の講師/管理者のみ。 */
 coursesRoute.post('/:id/announcements', async (c) => {
   const user = c.get('user');
   const courseId = c.req.param('id');

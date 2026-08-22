@@ -1,3 +1,5 @@
+// セッションミドルウェア（requireSession）のテスト。
+// Cookie無し/期限切れ/未知のトークンをそれぞれ401で拒否できるかを確認する。
 import { describe, expect, it } from 'vitest';
 import { env } from 'cloudflare:test';
 import { Hono } from 'hono';

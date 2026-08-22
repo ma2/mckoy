@@ -1,3 +1,7 @@
+// APIサーバーとの通信をまとめるfetchラッパー。credentials: 'include' で
+// セッションCookieを常に送る。開発時はVite proxyにより /api が同一オリジンに見える
+// ので、CORSやcrossサイトCookieの考慮は不要（wrangler.tomlのデプロイ設定も同様）。
+
 export class ApiError extends Error {
   status: number;
   constructor(status: number, message: string) {

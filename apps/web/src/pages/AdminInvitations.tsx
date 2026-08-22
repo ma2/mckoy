@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
 import { createGlobalInvitation } from '../lib/admin';
 
+/** 管理者専用の招待発行画面（講座に紐付かない、管理者・講師資格の付与）。仕様書 §22 の管理者画面「招待管理」。 */
 export default function AdminInvitations() {
   const { state } = useAuth();
   const [name, setName] = useState('');

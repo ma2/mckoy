@@ -1,3 +1,6 @@
+// `course_memberships` テーブルへのデータアクセス。ユーザーと講座の多対多関係
+// （join table）で、role/statusの組み合わせが権限判定の中心になる。仕様書 §9, §17 参照。
+
 export type MembershipRole = 'instructor' | 'student';
 export type MembershipStatus = 'pending' | 'active' | 'rejected';
 
@@ -26,6 +29,7 @@ export async function createMembership(
     .run();
 }
 
+/** 認可判定の核: あるユーザーがある講座で何者か（role/status）を1件返す。無ければnull。 */
 export async function getMembershipByCourseAndUser(
   db: D1Database,
   courseId: string,
@@ -37,10 +41,12 @@ export async function getMembershipByCourseAndUser(
     .first<MembershipRow>();
 }
 
+/** membership id から行を取得する。承認/拒否APIで、対象membershipが本当にその講座のものか検証する際に使う。 */
 export async function getMembershipById(db: D1Database, id: string): Promise<MembershipRow | null> {
   return db.prepare('SELECT * FROM course_memberships WHERE id = ?').bind(id).first<MembershipRow>();
 }
 
+/** 講座のメンバー一覧（氏名・メール付き）。参加申請の承認待ち一覧表示にも使う。 */
 export async function listMembershipsByCourse(db: D1Database, courseId: string): Promise<MembershipWithUserRow[]> {
   const { results } = await db
     .prepare(
@@ -55,6 +61,7 @@ export async function listMembershipsByCourse(db: D1Database, courseId: string):
   return results;
 }
 
+/** 参加申請の承認（active）・拒否（rejected）でstatusを更新する。 */
 export async function updateMembershipStatus(db: D1Database, id: string, status: MembershipStatus): Promise<void> {
   await db
     .prepare("UPDATE course_memberships SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
@@ -62,6 +69,7 @@ export async function updateMembershipStatus(db: D1Database, id: string, status:
     .run();
 }
 
+/** 「その講座のactiveな講師か」という、認可チェックで最も頻繁に使う判定。routes/courses.ts の canManageCourse 等から呼ばれる。 */
 export async function isActiveInstructor(db: D1Database, courseId: string, userId: string): Promise<boolean> {
   const membership = await getMembershipByCourseAndUser(db, courseId, userId);
   return membership !== null && membership.role === 'instructor' && membership.status === 'active';

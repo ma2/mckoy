@@ -11,6 +11,11 @@ const visibilityLabel: Record<string, string> = {
   all_users: '全員',
 };
 
+/**
+ * 小説詳細画面。作者本人だけが本文の編集フォームを見る（他人には本文をそのまま表示）。
+ * 削除ボタンは作者本人または管理者。コメント投稿フォームは対象講座のactive講師/管理者のみ。
+ * 改訂履歴・コメントは常に画面下部に表示する（別ルートは作らず1画面にまとめている）。
+ */
 export default function NovelDetail() {
   const { id } = useParams<{ id: string }>();
   const { state } = useAuth();

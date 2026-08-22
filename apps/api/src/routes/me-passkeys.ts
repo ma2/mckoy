@@ -5,10 +5,13 @@ import { requireSession } from '../auth/session';
 import { createRegistrationOptions, verifyRegistration } from '../auth/webauthn';
 import { createPasskey, countPasskeysByUserId, deleteOwnPasskey, listPasskeysByUserId } from '../db/passkeys';
 
+// ログイン後の自分のパスキー管理（一覧・追加・削除）。仕様書 §7。
+
 export const mePasskeysRoute = new Hono<AppEnv>();
 
 mePasskeysRoute.use('*', requireSession);
 
+/** 自分の登録済みパスキー一覧。 */
 mePasskeysRoute.get('/', async (c) => {
   const passkeys = await listPasskeysByUserId(c.env.DB, c.get('user').id);
   return c.json({
@@ -21,6 +24,7 @@ mePasskeysRoute.get('/', async (c) => {
   });
 });
 
+/** ログイン済みユーザーが追加のパスキーを登録する際のoptionsを発行する（招待経由の初回登録とは別ルート）。 */
 mePasskeysRoute.post('/options', async (c) => {
   const user = c.get('user');
   const options = await createRegistrationOptions(c.env.DB, c.env, user);
@@ -45,6 +49,7 @@ mePasskeysRoute.post('/verify', async (c) => {
   return c.json({}, 201);
 });
 
+/** 自分のパスキーを削除する。最後の1件は削除できない（ログイン不能になるため）。 */
 mePasskeysRoute.delete('/:id', async (c) => {
   const user = c.get('user');
   const remaining = await countPasskeysByUserId(c.env.DB, user.id);

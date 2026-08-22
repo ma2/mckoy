@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { loginWithPasskey } from '../lib/webauthn';
 import { useAuth } from '../lib/auth';
 
+/** ログイン画面。「パスキーでログイン」ボタンのみ（仕様書 §6、パスワード入力欄は設けない）。 */
 export default function Login() {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);

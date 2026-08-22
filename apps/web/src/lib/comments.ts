@@ -1,5 +1,7 @@
 import { api } from './api';
 
+// 小説へのコメント。routes/novels.ts の /:id/comments に対応する。
+
 export type Comment = {
   id: string;
   userId: string;

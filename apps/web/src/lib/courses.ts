@@ -1,5 +1,7 @@
 import { api } from './api';
 
+// バックエンドの routes/courses.ts に対応するAPIクライアント。
+
 export type Course = {
   id: string;
   name: string;

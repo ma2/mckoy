@@ -13,6 +13,12 @@ import {
   type Member,
 } from '../lib/courses';
 
+/**
+ * 講座詳細画面。誰が見ても名称・説明・小説一覧等へのリンクは出るが、
+ * 編集フォーム・メンバー管理・生徒招待は講師/管理者のみ。canManageの判定は
+ * 「メンバー一覧取得を試み、403なら講師/管理者ではない」という方法で行っている
+ * （専用の権限判定APIを持たないため、既存の講師限定エンドポイントを流用している）。
+ */
 export default function CourseDetail() {
   const { id } = useParams<{ id: string }>();
   const [course, setCourse] = useState<Course | null>(null);
@@ -32,6 +38,8 @@ export default function CourseDetail() {
     setName(course.name);
     setDescription(course.description ?? '');
 
+    // メンバー一覧APIは講師/管理者専用なので、これが通るかどうかで
+    // 「自分がこの講座を管理できるか」を判定する。
     try {
       const result = await listMembers(id);
       setMembers(result.members);

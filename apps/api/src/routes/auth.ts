@@ -5,13 +5,18 @@ import { createAuthenticationOptions, verifyAuthentication } from '../auth/webau
 import { issueSession, endSession, requireSession } from '../auth/session';
 import { getUserById } from '../db/users';
 
+// パスキーログイン（/login/options, /login/verify）とログアウト。
+// アカウント登録は routes/invitations.ts（招待経由）が担当し、ここでは扱わない。
+
 export const authRoute = new Hono<AppEnv>();
 
+/** discoverable credential用のログインoptionsを発行する（メールアドレス入力不要）。 */
 authRoute.post('/login/options', async (c) => {
   const options = await createAuthenticationOptions(c.env.DB, c.env);
   return c.json(options);
 });
 
+/** ログインレスポンスを検証し、成功したらセッションを発行する。 */
 authRoute.post('/login/verify', async (c) => {
   const body = await c.req.json<AuthenticationResponseJSON>();
   const result = await verifyAuthentication(c.env.DB, c.env, body);

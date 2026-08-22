@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { createNovel, type NovelVisibility } from '../lib/novels';
 
+/** 小説投稿画面。タグはカンマ区切りで入力させ、送信時に配列へ分割する。公開範囲の初期値は仕様書どおり「講師のみ」。 */
 export default function NovelNew() {
   const { id: courseId } = useParams<{ id: string }>();
   const [title, setTitle] = useState('');

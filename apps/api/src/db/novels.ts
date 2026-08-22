@@ -1,3 +1,6 @@
+// `novels` テーブルへのデータアクセス。可視性判定（誰が読めるか）は
+// routes/novels.ts の canViewNovel() に集約されており、ここでは行わない。
+
 export type NovelVisibility = 'instructors' | 'course_students' | 'all_users';
 
 export type NovelRow = {
@@ -26,10 +29,12 @@ export async function createNovel(
     .run();
 }
 
+/** 削除済みかどうかを問わず1件取得する。削除済みを弾くかは呼び出し側（routes/novels.ts）の責務。 */
 export async function getNovelById(db: D1Database, id: string): Promise<NovelRow | null> {
   return db.prepare('SELECT * FROM novels WHERE id = ?').bind(id).first<NovelRow>();
 }
 
+/** 論理削除済み（deleted_at IS NOT NULL）を除いた、講座内の小説一覧。visibilityによる絞り込みは呼び出し側で行う。 */
 export async function listNovelsByCourse(db: D1Database, courseId: string): Promise<NovelRow[]> {
   const { results } = await db
     .prepare('SELECT * FROM novels WHERE course_id = ? AND deleted_at IS NULL ORDER BY created_at DESC')
@@ -38,6 +43,7 @@ export async function listNovelsByCourse(db: D1Database, courseId: string): Prom
   return results;
 }
 
+/** title/body/visibility を更新する。改訂履歴(novel_revisions)への保存は呼び出し側の責務。 */
 export async function updateNovel(
   db: D1Database,
   id: string,
@@ -51,6 +57,7 @@ export async function updateNovel(
     .run();
 }
 
+/** 論理削除する（物理削除ではない）。仕様書 §12 のとおり、以後 deleted_at IS NULL のクエリからは除外される。 */
 export async function softDeleteNovel(
   db: D1Database,
   id: string,

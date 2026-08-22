@@ -1,3 +1,6 @@
+// `passkeys` テーブルへのデータアクセス。ユーザーごとに登録されたWebAuthn
+// クレデンシャル。1ユーザーが複数持てる（端末ごとに1つ）。仕様書 §7 参照。
+
 export type PasskeyRow = {
   id: string;
   user_id: string;
@@ -10,10 +13,12 @@ export type PasskeyRow = {
   last_used_at: string | null;
 };
 
+/** ログイン時のWebAuthn assertionが持つcredential idから、所有パスキー（＝ユーザー）を特定する。 */
 export async function getPasskeyByCredentialId(db: D1Database, credentialId: string): Promise<PasskeyRow | null> {
   return db.prepare('SELECT * FROM passkeys WHERE credential_id = ?').bind(credentialId).first<PasskeyRow>();
 }
 
+/** 「登録済みパスキー一覧」表示と、新規登録時の excludeCredentials 構築の両方で使う。 */
 export async function listPasskeysByUserId(db: D1Database, userId: string): Promise<PasskeyRow[]> {
   const { results } = await db
     .prepare('SELECT * FROM passkeys WHERE user_id = ? ORDER BY created_at ASC')
@@ -42,6 +47,7 @@ export async function createPasskey(
     .run();
 }
 
+/** ログイン成功後に署名カウンタと最終利用日時を更新する（リプレイ検知のための記録）。 */
 export async function touchPasskeyUsage(db: D1Database, id: string, counter: number): Promise<void> {
   await db
     .prepare("UPDATE passkeys SET counter = ?, last_used_at = CURRENT_TIMESTAMP WHERE id = ?")
@@ -49,12 +55,13 @@ export async function touchPasskeyUsage(db: D1Database, id: string, counter: num
     .run();
 }
 
-/** Deletes a passkey only if it belongs to userId; returns whether a row was deleted. */
+/** そのパスキーがuserIdの所有物である場合のみ削除する。削除できたかどうかを返す。 */
 export async function deleteOwnPasskey(db: D1Database, id: string, userId: string): Promise<boolean> {
   const result = await db.prepare('DELETE FROM passkeys WHERE id = ? AND user_id = ?').bind(id, userId).run();
   return (result.meta.changes ?? 0) > 0;
 }
 
+/** ユーザーが最後の1つのパスキーを削除してログイン不能になるのを防ぐために使う。 */
 export async function countPasskeysByUserId(db: D1Database, userId: string): Promise<number> {
   const row = await db
     .prepare('SELECT COUNT(*) as count FROM passkeys WHERE user_id = ?')

@@ -15,6 +15,7 @@ import CourseAssignments from './pages/CourseAssignments';
 import CourseAnnouncements from './pages/CourseAnnouncements';
 import AdminInvitations from './pages/AdminInvitations';
 
+/** 未認証なら/loginへリダイレクトする。認証状態の確認中は簡易的なローディング表示を出す。 */
 function RequireAuth({ children }: { children: ReactElement }) {
   const { state } = useAuth();
   if (state.status === 'loading') return <p>読み込み中...</p>;
@@ -22,6 +23,11 @@ function RequireAuth({ children }: { children: ReactElement }) {
   return children;
 }
 
+/**
+ * ルーティング定義。/login と /invitations/:token（招待受諾）だけが未認証でも
+ * アクセス可能で、それ以外は全て RequireAuth 配下（サーバー側の認可はもちろん
+ * 各APIルート側で別途行っている。ここでのガードは画面遷移のためのもの）。
+ */
 export default function App() {
   return (
     <AuthProvider>

@@ -5,6 +5,7 @@ import { addPasskey } from '../lib/webauthn';
 
 type Passkey = { id: string; name: string | null; createdAt: string; lastUsedAt: string | null };
 
+/** 自分のパスキー管理画面。一覧・追加・削除ができる（仕様書 §7）。 */
 export default function Passkeys() {
   const [passkeys, setPasskeys] = useState<Passkey[]>([]);
   const [error, setError] = useState<string | null>(null);

@@ -1,3 +1,4 @@
+// WebAuthn challengeの一度きり使用（single-use）を保証できているかのテスト。
 import { describe, expect, it } from 'vitest';
 import { env } from 'cloudflare:test';
 import { storeChallenge, consumeChallenge } from '../src/auth/challenge';

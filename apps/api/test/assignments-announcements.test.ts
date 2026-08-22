@@ -1,3 +1,5 @@
+// 課題・お知らせの作成権限（active講師/管理者のみ）と、閲覧権限
+// （active membership必須、pendingは不可）を、共通のテストケースで両方について検証する。
 import { describe, expect, it } from 'vitest';
 import { env } from 'cloudflare:test';
 import { Hono } from 'hono';

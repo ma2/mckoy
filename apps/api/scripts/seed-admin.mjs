@@ -1,9 +1,7 @@
 #!/usr/bin/env node
-// Bootstraps the initial admin per MCKOY_SPEC.md §5.1: the very first admin is
-// created out-of-band (not through the admin-only invitation API, since no
-// admin exists yet) by inserting an invitation row directly into local D1.
-// The resulting invitation URL is completed like any other invite: the
-// recipient opens it and registers a passkey.
+// 仕様書 §5.1 のとおり初期管理者を構築時に作成するスクリプト。管理者専用の
+// 招待APIはまだ誰も管理者がいないので使えないため、招待行をD1に直接INSERTする。
+// 発行された招待URLは他の招待と同じ手順（開いてパスキーを登録）で完了する。
 import { randomBytes, randomUUID, createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { writeFileSync, unlinkSync } from 'node:fs';

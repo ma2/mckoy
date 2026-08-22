@@ -4,6 +4,7 @@ import { useAuth } from '../lib/auth';
 import { getMyMembership } from '../lib/courses';
 import { listAnnouncements, createAnnouncement, type Announcement } from '../lib/announcements';
 
+/** 講座内のお知らせ一覧・作成画面。作成フォームはその講座のactive講師/管理者のみ表示する。 */
 export default function CourseAnnouncements() {
   const { id: courseId } = useParams<{ id: string }>();
   const { state } = useAuth();
