@@ -81,6 +81,26 @@ glibc が古いホストでは、上記のうち migrate:local / dev:api / test:
 `/workspace` にリポジトリをバインドマウントして実行する（`apps/web` の dev server は glibc 制約と無関係
 なので直接実行できるが、`wrangler` の `/api` プロキシ先が動いていないと 502 になる）。
 
+## 開発ワークフロー
+
+issueに応じた修正は `dev` ブランチにpushしてPRを作成し、ユーザーが `master` へマージする
+（直接 `master` にpushしない）。コミット前に必ずテスト（`apps/api`: `npx tsc --noEmit &&
+npx vitest run`、`apps/web`: `npx tsc --noEmit`）を実行する。UIに関わる変更はDocker上で
+`wrangler dev` + `vite` devサーバーを起動し、Playwright + 仮想パスキー認証器（CDPの
+`WebAuthn.addVirtualAuthenticator`）で実写確認する（検証用スクリプト・Playwright自体は
+検証後にコンテナごと破棄し、リポジトリには残さない）。
+
+`master` へのマージ後は本番環境（`[env.production]`）へ、新しいmigrationがあれば
+`wrangler d1 migrations apply mckoy_db --env production --remote` を先に実行してから
+`wrangler deploy --env production` でデプロイする（デプロイ後はビルド済みアセットの
+ハッシュがCDNに反映されるまでの伝播待ちがあるため、新しいアセットが配信されるまで
+ポーリングしてから完了とみなす）。
+
+`master` へのマージ前に `dev` ブランチの内容を実際に動かして確認したい場合は、
+ステージング環境（`[env.staging]`、仕様書 §3「デプロイ環境」）へ同様の手順でデプロイする
+（本番とは別のWorker・D1データベース・WebAuthnオリジンを使う）。デプロイは自動化せず、
+必要な時にユーザーの依頼を受けて手動実行する。
+
 ## Mckoy とは
 
 Mckoy は、小説創作講座向けの招待制・会員制小説投稿・管理システムであり、想定利用者は約100人（生徒・講師・管理者）。
