@@ -216,7 +216,9 @@ export default function NovelDetail() {
         <ul className="entry-list">
           {comments.map((c) => (
             <li key={c.id} className="entry-list__item">
-              <p className="entry-list__meta">{c.userName}</p>
+              <p className="entry-list__meta">
+                {c.userName} ・ {c.createdAt}
+              </p>
               <p style={{ margin: 0 }}>{c.body}</p>
             </li>
           ))}
