@@ -4,7 +4,12 @@ import { api } from '../lib/api';
 import { registerPasskeyForInvitation } from '../lib/webauthn';
 import { useAuth } from '../lib/auth';
 
-type InvitationInfo = { name: string; email: string; course: { id: string; name: string } | null };
+type InvitationInfo = {
+  name: string;
+  email: string;
+  course: { id: string; name: string } | null;
+  isPasskeyReset: boolean;
+};
 
 /** 招待受諾画面。招待内容（氏名・メール・対象講座）を表示し、パスキー登録で新規アカウントを作成する（仕様書 §5.5）。 */
 export default function AcceptInvitation() {
@@ -66,6 +71,12 @@ export default function AcceptInvitation() {
         <p>
           メール: <strong>{invitation.email}</strong>
         </p>
+        {invitation.isPasskeyReset && (
+          <p className="notice">
+            パスキーの再登録です。登録すると、既存のアカウントに新しいパスキーが追加されます
+            （新しいアカウントは作成されません）。
+          </p>
+        )}
         {invitation.course && (
           <p className="notice">
             「{invitation.course.name}」講座への招待です。登録すると、この講座のメンバーとして参加します。

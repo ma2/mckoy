@@ -1,6 +1,7 @@
 // `invitations` テーブルへのデータアクセス。すべてのアカウントはこの行を経由して
-// 作成される（仕様書 §5 参照）。講座に紐付かない招待（管理者・講師付与、course_idはnull）と、
-// 講座紐付きの招待（生徒招待、登録時にactive membershipを付与）の2種類がある。
+// 作成される（仕様書 §5 参照）。講座に紐付かない招待（管理者・講師付与、course_idはnull）、
+// 講座紐付きの招待（生徒招待、登録時にactive membershipを付与）、既存ユーザーへの
+// パスキー再登録招待（target_user_idが設定される、仕様書 §7.1）の3種類がある。
 
 export type InvitationRow = {
   id: string;
@@ -10,6 +11,7 @@ export type InvitationRow = {
   can_teach: number;
   course_id: string | null;
   membership_role: string | null;
+  target_user_id: string | null;
   token_hash: string;
   expires_at: string;
   used_at: string | null;
@@ -34,6 +36,7 @@ export async function createInvitation(
     canTeach: boolean;
     courseId: string | null;
     membershipRole: 'instructor' | 'student' | null;
+    targetUserId: string | null;
     tokenHash: string;
     expiresAt: string;
     invitedBy: string | null;
@@ -42,8 +45,8 @@ export async function createInvitation(
   await db
     .prepare(
       `INSERT INTO invitations
-         (id, email, name, is_admin, can_teach, course_id, membership_role, token_hash, expires_at, invited_by)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         (id, email, name, is_admin, can_teach, course_id, membership_role, target_user_id, token_hash, expires_at, invited_by)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
     .bind(
       params.id,
@@ -53,6 +56,7 @@ export async function createInvitation(
       params.canTeach ? 1 : 0,
       params.courseId,
       params.membershipRole,
+      params.targetUserId,
       params.tokenHash,
       params.expiresAt,
       params.invitedBy,

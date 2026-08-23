@@ -2,6 +2,14 @@
 // 仕様書 §5.1 のとおり初期管理者を構築時に作成するスクリプト。管理者専用の
 // 招待APIはまだ誰も管理者がいないので使えないため、招待行をD1に直接INSERTする。
 // 発行された招待URLは他の招待と同じ手順（開いてパスキーを登録）で完了する。
+//
+// このスクリプトは初回構築時に限らず、管理者が全員パスキーを失いログインできなくなった
+// 場合の break-glass 復旧手段としても使う（仕様書 §5.1、§7.1）。Web API・アプリ内の
+// セッション/パスキー認証を一切経由せず、Cloudflareアカウントへのアクセス権
+// （`wrangler login` またはAPIトークン）のみを根拠に `--remote` で本番D1へ直接
+// 新しい管理者招待を書き込めるため、既存の管理者が誰もログインできない状況でも
+// 実行できる。信頼できる運用者がローカル環境から実行すること（Web経由で誰でも
+// 呼び出せるエンドポイントには決してしない）。
 import { randomBytes, randomUUID, createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { writeFileSync, unlinkSync } from 'node:fs';

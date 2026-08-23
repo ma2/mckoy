@@ -143,6 +143,13 @@ Mckoy は招待制とする。
 
 以降の管理者は既存管理者が招待する。
 
+万が一、管理者が全員パスキーを失いログイン不能になった場合のため、Web/アプリ内認証を
+一切経由しない break-glass 手順を用意する: 信頼できる運用者が、Cloudflareアカウントへの
+アクセス権（`wrangler login`／APIトークン）のみを根拠に、ローカルから
+`apps/api/scripts/seed-admin.mjs --remote` を実行し、本番D1に新しい管理者招待を直接
+書き込む。この根拠はアプリ内のセッション/パスキー認証とは別の信頼境界であり、既存の
+管理者が誰もログインできない状況でも実行できる。
+
 ### 5.2 講師の登録
 
 管理者が講師を招待する。
@@ -260,8 +267,15 @@ discoverable credential を利用し、可能な限りメールアドレスや�
 手順3のため、管理者は全ユーザー一覧（`GET /api/admin/users`）から対象ユーザーを選び、
 そのユーザーのパスキー一覧を確認・失効できる（`GET`/`DELETE /api/admin/users/:userId/passkeys`）。
 本人によるセルフサービス削除（`DELETE /api/me/passkeys/:id`）と異なり、最後の1件でも
-失効できる（失効後、手順4で新しい招待URLを発行する運用が前提のため）。手順4の招待URL発行は
-既存の「招待管理」画面（管理者専用の講座に紐付かない招待）をそのまま使う。
+失効できる（失効後、手順4で新しい招待URLを発行する運用が前提のため）。
+
+手順4の招待URL発行は、通常の「招待管理」画面（講座に紐付かない新規アカウント作成用の招待）
+とは**別の**専用エンドポイント（`POST /api/admin/users/:userId/passkey-reset-invitation`）を
+使う。通常の招待は常に新規ユーザーを作成するため、既に`users`行があるメールアドレス宛だと
+登録時に409エラーになり、既存アカウントの復旧には使えない。この専用エンドポイントが発行する
+招待は`invitations.target_user_id`にそのユーザーのidを設定しており、受諾（パスキー登録）時は
+新規アカウントを作らず、既存ユーザーへパスキーを追加するだけになる。これにより、対象ユーザーの
+講座membership・投稿した小説・コメント等の既存データはそのまま引き継がれる。
 
 ---
 
@@ -563,6 +577,7 @@ is_admin
 can_teach
 course_id nullable
 membership_role nullable
+target_user_id nullable  # 設定されていればパスキー再登録招待（§7.1）、NULLなら新規アカウント作成招待
 token_hash
 expires_at
 used_at
@@ -768,6 +783,7 @@ DELETE /api/me/passkeys/:id
 GET    /api/admin/users                       # 管理者専用。手動復旧（§7.1）の対象ユーザーを選ぶための一覧
 GET    /api/admin/users/:userId/passkeys       # 管理者専用
 DELETE /api/admin/users/:userId/passkeys/:id   # 管理者専用。本人によるセルフサービス削除と異なり最後の1件も失効できる
+POST   /api/admin/users/:userId/passkey-reset-invitation  # 管理者専用。§7.1手順4。既存ユーザーへのパスキー再登録招待を発行
 
 GET    /api/courses   # 各講座に呼び出しユーザー自身のmembership(role/status、無ければnull)を含める（§9.3）
 POST   /api/courses

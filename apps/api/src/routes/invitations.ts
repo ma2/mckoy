@@ -4,7 +4,7 @@ import type { AppEnv } from '../types';
 import { sha256Hex } from '../util/crypto';
 import { sqliteTimestamp } from '../util/time';
 import { getInvitationByTokenHash, isInvitationUsable, markInvitationUsed, type InvitationRow } from '../db/invitations';
-import { createUser, getUserByEmail } from '../db/users';
+import { createUser, getUserByEmail, getUserById } from '../db/users';
 import { createPasskey } from '../db/passkeys';
 import { getCourseById } from '../db/courses';
 import { createMembership, type MembershipRole } from '../db/course_memberships';
@@ -56,13 +56,26 @@ invitationsRoute.get('/:token', async (c) => {
     name: invitation.name,
     email: invitation.email,
     course: course ? { id: course.id, name: course.name } : null,
+    isPasskeyReset: invitation.target_user_id !== null,
   });
 });
 
-/** パスキー登録用のoptionsを発行する。ユーザー行はまだ存在しないので、招待idを仮のuser idとして使う。 */
+/**
+ * パスキー登録用のoptionsを発行する。target_user_id付き（既存ユーザーへの再登録招待、
+ * 仕様書 §7.1）ならそのユーザー本人としてoptionsを作る（me-passkeys.tsの追加登録と
+ * 同じ扱い）。通常の新規アカウント招待では、ユーザー行はまだ存在しないので招待idを
+ * 仮のuser idとして使う。
+ */
 invitationsRoute.post('/:token/register/options', async (c) => {
   const invitation = await loadUsableInvitation(c, c.env.DB);
   if (!invitation) return c.json({ error: 'invitation_not_found' }, 404);
+
+  if (invitation.target_user_id) {
+    const targetUser = await getUserById(c.env.DB, invitation.target_user_id);
+    if (!targetUser) return c.json({ error: 'invitation_not_found' }, 404);
+    const options = await createRegistrationOptions(c.env.DB, c.env, targetUser);
+    return c.json(options);
+  }
 
   const existingUser = await getUserByEmail(c.env.DB, invitation.email);
   if (existingUser) return c.json({ error: 'already_registered' }, 409);
@@ -78,10 +91,38 @@ invitationsRoute.post('/:token/register/options', async (c) => {
   return c.json(options);
 });
 
-/** 登録を確定する: パスキー検証 → ユーザー/パスキー作成 → （講座招待なら）membership付与 → セッション発行。 */
+/**
+ * 登録を確定する。target_user_id付き（既存ユーザーへの再登録招待）なら、新規アカウントを
+ * 作らず既存ユーザーへパスキーを追加するだけにする（講座membership・投稿した小説等の
+ * 既存データはそのまま）。通常の新規アカウント招待では: パスキー検証 → ユーザー/パスキー
+ * 作成 → （講座招待なら）membership付与 → セッション発行、の順で行う。
+ */
 invitationsRoute.post('/:token/register/verify', async (c) => {
   const invitation = await loadUsableInvitation(c, c.env.DB);
   if (!invitation) return c.json({ error: 'invitation_not_found' }, 404);
+
+  if (invitation.target_user_id) {
+    const targetUser = await getUserById(c.env.DB, invitation.target_user_id);
+    if (!targetUser) return c.json({ error: 'invitation_not_found' }, 404);
+
+    const body = await c.req.json<RegistrationResponseJSON>();
+    const verified = await verifyRegistration(c.env.DB, c.env, body);
+    if (!verified) return c.json({ error: 'verification_failed' }, 400);
+
+    await createPasskey(c.env.DB, {
+      id: crypto.randomUUID(),
+      userId: targetUser.id,
+      credentialId: verified.credentialId,
+      publicKey: verified.publicKey,
+      counter: verified.counter,
+      transports: verified.transports,
+      name: guessPasskeyName(c.req.header('user-agent')),
+    });
+    await markInvitationUsed(c.env.DB, invitation.id);
+    await issueSession(c, targetUser.id);
+
+    return c.json({ user: targetUser });
+  }
 
   const existingUser = await getUserByEmail(c.env.DB, invitation.email);
   if (existingUser) return c.json({ error: 'already_registered' }, 409);
