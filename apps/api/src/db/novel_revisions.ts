@@ -6,6 +6,7 @@ export type NovelRevisionRow = {
   novel_id: string;
   title: string;
   body: string;
+  plot: string | null;
   revision_comment: string | null;
   created_by: string;
   created_at: string;
@@ -14,13 +15,21 @@ export type NovelRevisionRow = {
 /** 小説の作成時・編集時に呼ばれ、その時点の内容を1件のrevisionとして保存する。 */
 export async function createRevision(
   db: D1Database,
-  params: { id: string; novelId: string; title: string; body: string; revisionComment: string | null; createdBy: string },
+  params: {
+    id: string;
+    novelId: string;
+    title: string;
+    body: string;
+    plot: string | null;
+    revisionComment: string | null;
+    createdBy: string;
+  },
 ): Promise<void> {
   await db
     .prepare(
-      'INSERT INTO novel_revisions (id, novel_id, title, body, revision_comment, created_by) VALUES (?, ?, ?, ?, ?, ?)',
+      'INSERT INTO novel_revisions (id, novel_id, title, body, plot, revision_comment, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)',
     )
-    .bind(params.id, params.novelId, params.title, params.body, params.revisionComment, params.createdBy)
+    .bind(params.id, params.novelId, params.title, params.body, params.plot, params.revisionComment, params.createdBy)
     .run();
 }
 

@@ -48,6 +48,7 @@ async function serializeNovel(db: D1Database, novel: NovelRow) {
     courseId: novel.course_id,
     title: novel.title,
     body: novel.body,
+    plot: novel.plot,
     visibility: novel.visibility,
     tags: await listTagsByNovel(db, novel.id),
     deletedAt: novel.deleted_at,
@@ -74,20 +75,23 @@ novelsRoute.patch('/:id', async (c) => {
   const body = await c.req.json<{
     title?: string;
     body?: string;
+    plot?: string;
     visibility?: NovelVisibility;
     tags?: string[];
     revisionComment?: string | null;
   }>();
   const title = body.title ?? novel.title;
   const text = body.body ?? novel.body;
+  const plot = body.plot !== undefined ? body.plot || null : novel.plot;
   const visibility = body.visibility ?? novel.visibility;
 
-  await updateNovel(c.env.DB, novel.id, { title, body: text, visibility });
+  await updateNovel(c.env.DB, novel.id, { title, body: text, plot, visibility });
   await createRevision(c.env.DB, {
     id: crypto.randomUUID(),
     novelId: novel.id,
     title,
     body: text,
+    plot,
     revisionComment: body.revisionComment || null,
     createdBy: user.id,
   });
@@ -123,6 +127,7 @@ novelsRoute.get('/:id/revisions', async (c) => {
       id: r.id,
       title: r.title,
       body: r.body,
+      plot: r.plot,
       revisionComment: r.revision_comment,
       createdBy: r.created_by,
       createdAt: r.created_at,

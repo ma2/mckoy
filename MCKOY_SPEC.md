@@ -352,9 +352,13 @@ discoverable credential を利用し、可能な限りメールアドレスや�
 - author_id
 - title
 - body
+- plot
 - visibility
 - created_at
 - updated_at
+
+`title` は必須。`body`・`plot`（あらすじ・プロット）はいずれも任意（拡張、issue #19）。
+本文とは別にプロットのみを先に投稿することもできる。
 
 ### 10.2 タグ
 
@@ -415,6 +419,7 @@ Mckoy にログインしているすべての利用者が閲覧可能。
 - novel_id
 - title
 - body
+- plot
 - revision_comment
 - created_by
 - created_at
@@ -589,6 +594,7 @@ author_id
 course_id
 title
 body
+plot
 visibility
 deleted_at
 deleted_by
@@ -604,6 +610,7 @@ id
 novel_id
 title
 body
+plot
 revision_comment
 created_by
 created_at

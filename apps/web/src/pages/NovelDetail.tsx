@@ -24,6 +24,7 @@ export default function NovelDetail() {
   const [revisions, setRevisions] = useState<Revision[]>([]);
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
+  const [plot, setPlot] = useState('');
   const [tags, setTags] = useState('');
   const [visibility, setVisibility] = useState<NovelVisibility>('instructors');
   const [updateComment, setUpdateComment] = useState('');
@@ -41,6 +42,7 @@ export default function NovelDetail() {
       setNovel(novel);
       setTitle(novel.title);
       setBody(novel.body);
+      setPlot(novel.plot ?? '');
       setTags(novel.tags.join(', '));
       setVisibility(novel.visibility);
       const { revisions } = await listRevisions(id);
@@ -86,6 +88,7 @@ export default function NovelDetail() {
       const { novel } = await updateNovel(id, {
         title,
         body,
+        plot,
         visibility,
         tags: tags
           .split(',')
@@ -145,9 +148,17 @@ export default function NovelDetail() {
       {error && <p className="error">{error}</p>}
 
       {!isAuthor && (
-        <div className="card" style={{ fontFamily: 'var(--font-display)', fontSize: '1.05rem', whiteSpace: 'pre-wrap' }}>
-          {novel.body}
-        </div>
+        <>
+          {novel.plot && (
+            <div className="card">
+              <h2 style={{ marginTop: 0 }}>プロット</h2>
+              <div style={{ whiteSpace: 'pre-wrap' }}>{novel.plot}</div>
+            </div>
+          )}
+          <div className="card" style={{ fontFamily: 'var(--font-display)', fontSize: '1.05rem', whiteSpace: 'pre-wrap' }}>
+            {novel.body}
+          </div>
+        </>
       )}
 
       {isAuthor && (
@@ -158,8 +169,12 @@ export default function NovelDetail() {
               <input value={title} onChange={(e) => setTitle(e.target.value)} required />
             </label>
             <label className="field">
-              本文
-              <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={14} required />
+              本文（任意）
+              <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={14} />
+            </label>
+            <label className="field">
+              プロット（任意）
+              <textarea value={plot} onChange={(e) => setPlot(e.target.value)} rows={6} />
             </label>
             <label className="field">
               タグ（カンマ区切り）
