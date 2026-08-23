@@ -3,7 +3,14 @@ import Breadcrumb from '../components/Breadcrumb';
 import { useAuth } from '../lib/auth';
 import { api } from '../lib/api';
 import { addPasskey } from '../lib/webauthn';
-import { listUsers, listUserPasskeys, deleteUserPasskey, type AdminUser, type AdminPasskey } from '../lib/admin';
+import {
+  listUsers,
+  listUserPasskeys,
+  deleteUserPasskey,
+  createPasskeyResetInvitation,
+  type AdminUser,
+  type AdminPasskey,
+} from '../lib/admin';
 
 type Passkey = { id: string; name: string | null; createdAt: string; lastUsedAt: string | null };
 
@@ -18,6 +25,7 @@ export default function Passkeys() {
   const [selectedUserId, setSelectedUserId] = useState('');
   const [targetPasskeys, setTargetPasskeys] = useState<AdminPasskey[]>([]);
   const [adminError, setAdminError] = useState<string | null>(null);
+  const [resetInvitationUrl, setResetInvitationUrl] = useState<string | null>(null);
 
   async function load() {
     const result = await api.get<{ passkeys: Passkey[] }>('/me/passkeys');
@@ -72,6 +80,17 @@ export default function Passkeys() {
     }
   }
 
+  async function handleIssueResetInvitation() {
+    setAdminError(null);
+    setResetInvitationUrl(null);
+    try {
+      const { invitationUrl } = await createPasskeyResetInvitation(selectedUserId);
+      setResetInvitationUrl(invitationUrl);
+    } catch {
+      setAdminError('招待URLの発行に失敗しました。');
+    }
+  }
+
   return (
     <main className="page">
       <Breadcrumb items={[{ label: 'ホーム', to: '/' }, { label: 'パスキー管理' }]} />
@@ -100,8 +119,10 @@ export default function Passkeys() {
         <div className="card" style={{ marginTop: 'var(--space-6)' }}>
           <h2 style={{ marginTop: 0 }}>ユーザーのパスキー管理（手動復旧用）</h2>
           <p style={{ color: 'var(--text-muted)' }}>
-            パスキーをすべて失ったユーザーについて、既存パスキーを失効させた上で「招待管理」から
-            再登録用の招待URLを発行してください（仕様書 §7.1）。
+            パスキーをすべて失ったユーザーについて、既存パスキーを失効させた上で下の
+            「再登録用の招待URLを発行」から招待URLを発行してください（仕様書 §7.1）。
+            このURLで登録すると、新しいアカウントではなく既存のアカウントにパスキーが
+            追加されるため、講座membershipや投稿済みの小説はそのまま引き継がれます。
           </p>
           <label className="field">
             対象ユーザー
@@ -109,6 +130,7 @@ export default function Passkeys() {
               value={selectedUserId}
               onChange={(e) => {
                 setSelectedUserId(e.target.value);
+                setResetInvitationUrl(null);
                 loadTargetPasskeys(e.target.value);
               }}
             >
@@ -143,6 +165,18 @@ export default function Passkeys() {
                 ))}
               </ul>
             ))}
+          {selectedUserId && (
+            <>
+              <button onClick={handleIssueResetInvitation} style={{ marginTop: 'var(--space-4)' }}>
+                再登録用の招待URLを発行
+              </button>
+              {resetInvitationUrl && (
+                <p className="notice" style={{ marginTop: 'var(--space-4)' }}>
+                  招待URL: <code>{resetInvitationUrl}</code>
+                </p>
+              )}
+            </>
+          )}
         </div>
       )}
     </main>

@@ -127,3 +127,45 @@ describe('admin user management (issue #35)', () => {
     expect(res.status).toBe(404);
   });
 });
+
+describe('passkey reset invitations (issue: admin lockout recovery)', () => {
+  it('rejects a non-admin from issuing a passkey reset invitation', async () => {
+    const app = buildApp();
+    const user = await createTestUser();
+    const target = await createTestUser();
+    const cookie = await loginAs(app, user.id);
+
+    const res = await app.request(`/admin/users/${target.id}/passkey-reset-invitation`, {
+      method: 'POST',
+      headers: { cookie },
+    }, env);
+    expect(res.status).toBe(403);
+  });
+
+  it('lets an admin issue a passkey reset invitation for an existing user', async () => {
+    const app = buildApp();
+    const admin = await createTestUser({ isAdmin: true });
+    const target = await createTestUser({ name: 'Locked Out Student' });
+    const cookie = await loginAs(app, admin.id);
+
+    const res = await app.request(`/admin/users/${target.id}/passkey-reset-invitation`, {
+      method: 'POST',
+      headers: { cookie },
+    }, env);
+    expect(res.status).toBe(201);
+    const { invitationUrl } = await res.json<{ invitationUrl: string }>();
+    expect(invitationUrl).toContain('/invitations/');
+  });
+
+  it('returns 404 when issuing a reset invitation for a nonexistent user', async () => {
+    const app = buildApp();
+    const admin = await createTestUser({ isAdmin: true });
+    const cookie = await loginAs(app, admin.id);
+
+    const res = await app.request(`/admin/users/${crypto.randomUUID()}/passkey-reset-invitation`, {
+      method: 'POST',
+      headers: { cookie },
+    }, env);
+    expect(res.status).toBe(404);
+  });
+});

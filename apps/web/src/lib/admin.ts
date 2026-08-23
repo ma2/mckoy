@@ -16,3 +16,7 @@ export const listUserPasskeys = (userId: string) =>
 
 export const deleteUserPasskey = (userId: string, passkeyId: string) =>
   api.delete<void>(`/admin/users/${userId}/passkeys/${passkeyId}`);
+
+/** 既存ユーザーへのパスキー再登録用招待URLを発行する（仕様書 §7.1 手動復旧フロー手順4）。 */
+export const createPasskeyResetInvitation = (userId: string) =>
+  api.post<{ invitationUrl: string }>(`/admin/users/${userId}/passkey-reset-invitation`);

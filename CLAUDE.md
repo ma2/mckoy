@@ -14,7 +14,10 @@ npm workspaces による monorepo。`apps/api`（Cloudflare Workers + Hono + D1�
   セッション管理、`/api/admin/invitations`、自分のパスキー管理。パスキー登録時はUser-Agentから
   デフォルト名を自動付与し（issue #35）、`/api/admin/users` 経由で管理者が全ユーザーを確認し、
   手動復旧のため任意ユーザーのパスキーを失効できる（仕様書 §7.1、本人によるセルフサービス削除と
-  異なり最後の1件も失効可）。
+  異なり最後の1件も失効可）。失効後は `/api/admin/users/:userId/passkey-reset-invitation` で
+  そのユーザー宛のパスキー再登録招待（`invitations.target_user_id`）を発行できる。この招待は
+  通常の招待と異なり新規アカウントを作らず、既存ユーザーへパスキーを追加するだけなので、
+  講座membership・投稿した小説等の既存データがそのまま引き継がれる。
 - Phase 2（講座）: courses / course_memberships、講座作成（作成者は同時にactive instructor
   membershipを得る）、講座編集、`/api/courses/:id/invitations`（講座紐付きの生徒招待、受諾で即active
   membership）、生徒からの参加申請（`/api/courses/:id/join`、pending→承認/拒否）。
@@ -55,7 +58,9 @@ npm install
 # API: ローカル D1 に migration 適用
 npm run migrate:local   # = wrangler d1 migrations apply mckoy_db --local (apps/api)
 
-# API: 初期管理者の招待を作成（ローカルD1に直接 invitations 行を投入し、招待URLを表示）
+# API: 初期管理者の招待を作成（ローカルD1に直接 invitations 行を投入し、招待URLを表示）。
+# --remote を付けると本番D1に対して実行でき、Web/アプリ内認証を一切経由しないため、
+# 管理者が全員パスキーを失いログインできなくなった場合の break-glass 復旧手段も兼ねる。
 npm run seed:admin -- --name='管理者' --email='admin@example.com'   # (apps/api/scripts/seed-admin.mjs)
 
 # API: dev server (http://localhost:8787)
