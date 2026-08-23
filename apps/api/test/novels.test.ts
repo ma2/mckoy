@@ -332,4 +332,32 @@ describe('revisions', () => {
     expect(revisions[0]!.title).toBe('Revised title');
     expect(revisions[0]!.body).toBe('revised body');
   });
+
+  it('saves an optional revision comment supplied on update (issue #16)', async () => {
+    const app = buildApp();
+    const { courseId, student } = await seedCourseWithStudent();
+    const studentCookie = await loginAs(app, student.id);
+    const novelId = await postNovel(app, studentCookie, courseId, { title: 'Original title' });
+
+    await app.request(
+      `/novels/${novelId}`,
+      jsonRequest('PATCH', studentCookie, { body: 'revised body', revisionComment: '誤字を修正しました' }),
+      env,
+    );
+
+    const revisions = await listRevisionsByNovel(env.DB, novelId);
+    expect(revisions[0]!.revision_comment).toBe('誤字を修正しました');
+  });
+
+  it('leaves the revision comment null when omitted on update', async () => {
+    const app = buildApp();
+    const { courseId, student } = await seedCourseWithStudent();
+    const studentCookie = await loginAs(app, student.id);
+    const novelId = await postNovel(app, studentCookie, courseId, { title: 'Original title' });
+
+    await app.request(`/novels/${novelId}`, jsonRequest('PATCH', studentCookie, { body: 'revised body' }), env);
+
+    const revisions = await listRevisionsByNovel(env.DB, novelId);
+    expect(revisions[0]!.revision_comment).toBeNull();
+  });
 });

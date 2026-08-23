@@ -71,7 +71,13 @@ novelsRoute.patch('/:id', async (c) => {
   if (!novel) return c.json({ error: 'not_found' }, 404);
   if (novel.author_id !== user.id) return c.json({ error: 'forbidden' }, 403);
 
-  const body = await c.req.json<{ title?: string; body?: string; visibility?: NovelVisibility; tags?: string[] }>();
+  const body = await c.req.json<{
+    title?: string;
+    body?: string;
+    visibility?: NovelVisibility;
+    tags?: string[];
+    revisionComment?: string | null;
+  }>();
   const title = body.title ?? novel.title;
   const text = body.body ?? novel.body;
   const visibility = body.visibility ?? novel.visibility;
@@ -82,7 +88,7 @@ novelsRoute.patch('/:id', async (c) => {
     novelId: novel.id,
     title,
     body: text,
-    revisionComment: null,
+    revisionComment: body.revisionComment || null,
     createdBy: user.id,
   });
   if (body.tags) {

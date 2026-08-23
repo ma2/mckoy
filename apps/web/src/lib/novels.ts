@@ -49,7 +49,7 @@ export const getNovel = (id: string) => api.get<{ novel: Novel }>(`/novels/${id}
 
 export const updateNovel = (
   id: string,
-  params: { title?: string; body?: string; visibility?: NovelVisibility; tags?: string[] },
+  params: { title?: string; body?: string; visibility?: NovelVisibility; tags?: string[]; revisionComment?: string },
 ) => api.patch<{ novel: Novel }>(`/novels/${id}`, params);
 
 export const deleteNovel = (id: string, comment?: string) => api.delete<void>(`/novels/${id}`, comment ? { comment } : undefined);
