@@ -240,4 +240,15 @@ describe('join requests', () => {
     const second = await app.request(`/courses/${courseId}/join`, { method: 'POST', headers: { cookie } }, env);
     expect(second.status).toBe(409);
   });
+
+  it('rejects an admin from submitting a join request (issue #37)', async () => {
+    const app = buildApp();
+    const { id: courseId } = await seedCourse();
+    const admin = await createTestUser({ isAdmin: true });
+    const cookie = await loginAs(app, admin.id);
+
+    const res = await app.request(`/courses/${courseId}/join`, { method: 'POST', headers: { cookie } }, env);
+    expect(res.status).toBe(403);
+    expect(await getMembershipByCourseAndUser(env.DB, courseId, admin.id)).toBeNull();
+  });
 });
