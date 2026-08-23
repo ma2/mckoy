@@ -26,6 +26,7 @@ export default function NovelDetail() {
   const [body, setBody] = useState('');
   const [tags, setTags] = useState('');
   const [visibility, setVisibility] = useState<NovelVisibility>('instructors');
+  const [updateComment, setUpdateComment] = useState('');
   const [deleteComment, setDeleteComment] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [notFound, setNotFound] = useState(false);
@@ -90,8 +91,10 @@ export default function NovelDetail() {
           .split(',')
           .map((t) => t.trim())
           .filter((t) => t.length > 0),
+        revisionComment: updateComment || undefined,
       });
       setNovel(novel);
+      setUpdateComment('');
       const { revisions } = await listRevisions(id);
       setRevisions(revisions);
     } catch {
@@ -169,6 +172,10 @@ export default function NovelDetail() {
                 <option value="course_students">講座メンバー</option>
                 <option value="all_users">全員</option>
               </select>
+            </label>
+            <label className="field">
+              更新コメント（任意）
+              <input value={updateComment} onChange={(e) => setUpdateComment(e.target.value)} />
             </label>
             <button type="submit">更新</button>
           </form>
