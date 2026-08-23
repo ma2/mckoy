@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import Breadcrumb from '../components/Breadcrumb';
 import { api } from '../lib/api';
 import { addPasskey } from '../lib/webauthn';
 
@@ -41,6 +41,7 @@ export default function Passkeys() {
 
   return (
     <main className="page">
+      <Breadcrumb items={[{ label: 'ホーム', to: '/' }, { label: 'パスキー管理' }]} />
       <h1>パスキー管理</h1>
       {error && <p className="error">{error}</p>}
       {passkeys.length === 0 ? (
@@ -61,11 +62,6 @@ export default function Passkeys() {
         </ul>
       )}
       <button onClick={handleAdd}>パスキーを追加</button>
-      <p>
-        <Link className="back-link" to="/">
-          ホームへ戻る
-        </Link>
-      </p>
     </main>
   );
 }

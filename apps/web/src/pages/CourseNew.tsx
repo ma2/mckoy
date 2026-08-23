@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Breadcrumb from '../components/Breadcrumb';
 import { createCourse } from '../lib/courses';
 
 /** 講座作成画面。作成すると自動的にその講座のactive講師になる（routes/courses.ts 参照）。 */
@@ -26,6 +27,13 @@ export default function CourseNew() {
 
   return (
     <main className="page">
+      <Breadcrumb
+        items={[
+          { label: 'ホーム', to: '/' },
+          { label: '講座一覧', to: '/courses' },
+          { label: '新しい講座を作成' },
+        ]}
+      />
       <h1>新しい講座を作成</h1>
       <div className="card">
         <form onSubmit={handleSubmit}>

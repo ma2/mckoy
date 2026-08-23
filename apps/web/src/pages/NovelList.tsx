@@ -30,6 +30,7 @@ export default function NovelList() {
     <main className="page">
       <Breadcrumb
         items={[
+          { label: 'ホーム', to: '/' },
           { label: '講座一覧', to: '/courses' },
           { label: course?.name ?? '講座', to: `/courses/${courseId}` },
           { label: '小説一覧' },

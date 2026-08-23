@@ -124,7 +124,9 @@ export default function CourseDetail() {
 
   return (
     <main className="page">
-      <Breadcrumb items={[{ label: '講座一覧', to: '/courses' }, { label: course.name }]} />
+      <Breadcrumb
+        items={[{ label: 'ホーム', to: '/' }, { label: '講座一覧', to: '/courses' }, { label: course.name }]}
+      />
       <h1>{course.name}</h1>
       <p>
         <Link to={`/courses/${id}/novels`}>小説一覧</Link>
