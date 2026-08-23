@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import Breadcrumb from '../components/Breadcrumb';
 import { ApiError } from '../lib/api';
 import {
   approveMember,
@@ -123,6 +124,7 @@ export default function CourseDetail() {
 
   return (
     <main className="page">
+      <Breadcrumb items={[{ label: '講座一覧', to: '/courses' }, { label: course.name }]} />
       <h1>{course.name}</h1>
       <p>
         <Link to={`/courses/${id}/novels`}>小説一覧</Link>
@@ -217,10 +219,6 @@ export default function CourseDetail() {
           </div>
         </>
       )}
-
-      <Link className="back-link" to="/courses">
-        講座一覧へ戻る
-      </Link>
     </main>
   );
 }
