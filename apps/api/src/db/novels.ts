@@ -9,6 +9,7 @@ export type NovelRow = {
   course_id: string;
   title: string;
   body: string;
+  plot: string | null;
   visibility: NovelVisibility;
   deleted_at: string | null;
   deleted_by: string | null;
@@ -19,13 +20,21 @@ export type NovelRow = {
 
 export async function createNovel(
   db: D1Database,
-  params: { id: string; authorId: string; courseId: string; title: string; body: string; visibility: NovelVisibility },
+  params: {
+    id: string;
+    authorId: string;
+    courseId: string;
+    title: string;
+    body: string;
+    plot: string | null;
+    visibility: NovelVisibility;
+  },
 ): Promise<void> {
   await db
     .prepare(
-      'INSERT INTO novels (id, author_id, course_id, title, body, visibility) VALUES (?, ?, ?, ?, ?, ?)',
+      'INSERT INTO novels (id, author_id, course_id, title, body, plot, visibility) VALUES (?, ?, ?, ?, ?, ?, ?)',
     )
-    .bind(params.id, params.authorId, params.courseId, params.title, params.body, params.visibility)
+    .bind(params.id, params.authorId, params.courseId, params.title, params.body, params.plot, params.visibility)
     .run();
 }
 
@@ -55,17 +64,17 @@ export async function listNovelsByCourse(db: D1Database, courseId: string): Prom
   return results;
 }
 
-/** title/body/visibility を更新する。改訂履歴(novel_revisions)への保存は呼び出し側の責務。 */
+/** title/body/plot/visibility を更新する。改訂履歴(novel_revisions)への保存は呼び出し側の責務。 */
 export async function updateNovel(
   db: D1Database,
   id: string,
-  params: { title: string; body: string; visibility: NovelVisibility },
+  params: { title: string; body: string; plot: string | null; visibility: NovelVisibility },
 ): Promise<void> {
   await db
     .prepare(
-      "UPDATE novels SET title = ?, body = ?, visibility = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+      "UPDATE novels SET title = ?, body = ?, plot = ?, visibility = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
     )
-    .bind(params.title, params.body, params.visibility, id)
+    .bind(params.title, params.body, params.plot, params.visibility, id)
     .run();
 }
 

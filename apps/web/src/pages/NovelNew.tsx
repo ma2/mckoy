@@ -7,6 +7,7 @@ export default function NovelNew() {
   const { id: courseId } = useParams<{ id: string }>();
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
+  const [plot, setPlot] = useState('');
   const [tags, setTags] = useState('');
   const [visibility, setVisibility] = useState<NovelVisibility>('instructors');
   const [error, setError] = useState<string | null>(null);
@@ -22,6 +23,7 @@ export default function NovelNew() {
       const { novel } = await createNovel(courseId, {
         title,
         body,
+        plot,
         visibility,
         tags: tags
           .split(',')
@@ -46,8 +48,12 @@ export default function NovelNew() {
             <input value={title} onChange={(e) => setTitle(e.target.value)} required />
           </label>
           <label className="field">
-            本文
-            <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={14} required />
+            本文（任意）
+            <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={14} />
+          </label>
+          <label className="field">
+            プロット（任意）
+            <textarea value={plot} onChange={(e) => setPlot(e.target.value)} rows={6} />
           </label>
           <label className="field">
             タグ（カンマ区切り）

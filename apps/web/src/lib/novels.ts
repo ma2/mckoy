@@ -21,6 +21,7 @@ export type Novel = {
   courseId: string;
   title: string;
   body: string;
+  plot: string | null;
   visibility: NovelVisibility;
   tags: string[];
   deletedAt: string | null;
@@ -33,6 +34,7 @@ export type Revision = {
   id: string;
   title: string;
   body: string;
+  plot: string | null;
   revisionComment: string | null;
   createdBy: string;
   createdAt: string;
@@ -42,14 +44,21 @@ export const listNovels = (courseId: string) => api.get<{ novels: NovelSummary[]
 
 export const createNovel = (
   courseId: string,
-  params: { title: string; body: string; visibility?: NovelVisibility; tags?: string[] },
+  params: { title: string; body?: string; plot?: string; visibility?: NovelVisibility; tags?: string[] },
 ) => api.post<{ novel: Novel }>(`/courses/${courseId}/novels`, params);
 
 export const getNovel = (id: string) => api.get<{ novel: Novel }>(`/novels/${id}`);
 
 export const updateNovel = (
   id: string,
-  params: { title?: string; body?: string; visibility?: NovelVisibility; tags?: string[]; revisionComment?: string },
+  params: {
+    title?: string;
+    body?: string;
+    plot?: string;
+    visibility?: NovelVisibility;
+    tags?: string[];
+    revisionComment?: string;
+  },
 ) => api.patch<{ novel: Novel }>(`/novels/${id}`, params);
 
 export const deleteNovel = (id: string, comment?: string) => api.delete<void>(`/novels/${id}`, comment ? { comment } : undefined);

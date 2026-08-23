@@ -297,26 +297,36 @@ coursesRoute.post('/:id/novels', async (c) => {
     return c.json({ error: 'forbidden' }, 403);
   }
 
-  const body = await c.req.json<{ title?: string; body?: string; visibility?: NovelVisibility; tags?: string[] }>();
-  if (!body.title || !body.body) {
-    return c.json({ error: 'title_and_body_required' }, 400);
+  const body = await c.req.json<{
+    title?: string;
+    body?: string;
+    plot?: string;
+    visibility?: NovelVisibility;
+    tags?: string[];
+  }>();
+  if (!body.title) {
+    return c.json({ error: 'title_required' }, 400);
   }
 
   const id = crypto.randomUUID();
   const visibility = body.visibility ?? 'instructors';
+  const text = body.body ?? '';
+  const plot = body.plot || null;
   await createNovel(c.env.DB, {
     id,
     authorId: user.id,
     courseId,
     title: body.title,
-    body: body.body,
+    body: text,
+    plot,
     visibility,
   });
   await createRevision(c.env.DB, {
     id: crypto.randomUUID(),
     novelId: id,
     title: body.title,
-    body: body.body,
+    body: text,
+    plot,
     revisionComment: null,
     createdBy: user.id,
   });
@@ -332,6 +342,7 @@ coursesRoute.post('/:id/novels', async (c) => {
         id: novel!.id,
         title: novel!.title,
         body: novel!.body,
+        plot: novel!.plot,
         visibility: novel!.visibility,
         tags: await listTagsByNovel(c.env.DB, id),
         createdAt: novel!.created_at,

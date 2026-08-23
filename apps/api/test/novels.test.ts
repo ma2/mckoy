@@ -142,6 +142,51 @@ describe('novel creation', () => {
   });
 });
 
+describe('title/body/plot fields (issue #19)', () => {
+  it('rejects creation without a title', async () => {
+    const app = buildApp();
+    const { courseId, student } = await seedCourseWithStudent();
+    const cookie = await loginAs(app, student.id);
+
+    const res = await app.request(`/courses/${courseId}/novels`, jsonRequest('POST', cookie, { body: 'B' }), env);
+    expect(res.status).toBe(400);
+  });
+
+  it('allows creation with only a title (body and plot are optional)', async () => {
+    const app = buildApp();
+    const { courseId, student } = await seedCourseWithStudent();
+    const cookie = await loginAs(app, student.id);
+
+    const res = await app.request(
+      `/courses/${courseId}/novels`,
+      jsonRequest('POST', cookie, { title: 'Title only' }),
+      env,
+    );
+    expect(res.status).toBe(201);
+    const { novel } = await res.json<{ novel: { body: string; plot: string | null } }>();
+    expect(novel.body).toBe('');
+    expect(novel.plot).toBeNull();
+  });
+
+  it('saves and returns the plot separately from the body', async () => {
+    const app = buildApp();
+    const { courseId, student } = await seedCourseWithStudent();
+    const cookie = await loginAs(app, student.id);
+
+    const res = await app.request(
+      `/courses/${courseId}/novels`,
+      jsonRequest('POST', cookie, { title: 'T', body: 'B', plot: 'ここでどんでん返しが起きる' }),
+      env,
+    );
+    const { novel } = await res.json<{ novel: { id: string; plot: string | null } }>();
+    expect(novel.plot).toBe('ここでどんでん返しが起きる');
+
+    const getRes = await app.request(`/novels/${novel.id}`, { headers: { cookie } }, env);
+    const { novel: fetched } = await getRes.json<{ novel: { plot: string | null } }>();
+    expect(fetched.plot).toBe('ここでどんでん返しが起きる');
+  });
+});
+
 describe('course novel listing includes the author name (issue #10)', () => {
   it('reports the posting student\'s name alongside each novel', async () => {
     const app = buildApp();
