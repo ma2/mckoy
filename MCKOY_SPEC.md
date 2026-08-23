@@ -241,6 +241,10 @@ discoverable credential を利用し、可能な限りメールアドレスや�
 
 ユーザーはログイン後、自分のパスキー一覧を確認・追加・削除できる。
 
+パスキー登録時に名前を空のまま保存すると一覧でどれがどれか判別できなくなるため、
+登録リクエストのUser-AgentヘッダーからOS・ブラウザを推測し「iPhone Safari」のような
+デフォルト名を自動的に付与する（拡張、issue #35）。
+
 ### 7.1 パスキーをすべて失った場合
 
 メール＋パスワードによる復旧は行わない。
@@ -252,6 +256,12 @@ discoverable credential を利用し、可能な限りメールアドレスや�
 3. 管理者が既存パスキーを必要に応じて失効させる。
 4. 管理者がパスキー再登録用の一時招待URLを発行する。
 5. ユーザーが新しいパスキーを登録する。
+
+手順3のため、管理者は全ユーザー一覧（`GET /api/admin/users`）から対象ユーザーを選び、
+そのユーザーのパスキー一覧を確認・失効できる（`GET`/`DELETE /api/admin/users/:userId/passkeys`）。
+本人によるセルフサービス削除（`DELETE /api/me/passkeys/:id`）と異なり、最後の1件でも
+失効できる（失効後、手順4で新しい招待URLを発行する運用が前提のため）。手順4の招待URL発行は
+既存の「招待管理」画面（管理者専用の講座に紐付かない招待）をそのまま使う。
 
 ---
 
@@ -750,6 +760,10 @@ GET    /api/me
 GET    /api/me/passkeys
 POST   /api/me/passkeys
 DELETE /api/me/passkeys/:id
+
+GET    /api/admin/users                       # 管理者専用。手動復旧（§7.1）の対象ユーザーを選ぶための一覧
+GET    /api/admin/users/:userId/passkeys       # 管理者専用
+DELETE /api/admin/users/:userId/passkeys/:id   # 管理者専用。本人によるセルフサービス削除と異なり最後の1件も失効できる
 
 GET    /api/courses   # 各講座に呼び出しユーザー自身のmembership(role/status、無ければnull)を含める（§9.3）
 POST   /api/courses

@@ -11,7 +11,10 @@ npm workspaces による monorepo。`apps/api`（Cloudflare Workers + Hono + D1�
 `apps/web`（Vite + React + TypeScript）の2ワークスペース。現時点で実装済みなのは仕様書 §23 Phase 1〜2:
 
 - Phase 1（認証）: users / passkeys / invitations / sessions、招待受諾による登録、パスキーログイン、
-  セッション管理、`/api/admin/invitations`、自分のパスキー管理
+  セッション管理、`/api/admin/invitations`、自分のパスキー管理。パスキー登録時はUser-Agentから
+  デフォルト名を自動付与し（issue #35）、`/api/admin/users` 経由で管理者が全ユーザーを確認し、
+  手動復旧のため任意ユーザーのパスキーを失効できる（仕様書 §7.1、本人によるセルフサービス削除と
+  異なり最後の1件も失効可）。
 - Phase 2（講座）: courses / course_memberships、講座作成（作成者は同時にactive instructor
   membershipを得る）、講座編集、`/api/courses/:id/invitations`（講座紐付きの生徒招待、受諾で即active
   membership）、生徒からの参加申請（`/api/courses/:id/join`、pending→承認/拒否）。

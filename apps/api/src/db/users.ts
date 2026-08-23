@@ -45,6 +45,12 @@ export async function getUserByEmail(db: D1Database, email: string): Promise<Use
   return row ? toUser(row) : null;
 }
 
+/** 全ユーザー一覧。管理者がパスキー手動復旧（仕様書 §7.1）で対象ユーザーを選ぶ画面で使う。 */
+export async function listUsers(db: D1Database): Promise<User[]> {
+  const { results } = await db.prepare('SELECT * FROM users ORDER BY name ASC').all<UserRow>();
+  return results.map(toUser);
+}
+
 /** ユーザー行を作成した後、DB側で計算されるデフォルト値（created_at等）を含めて読み直して返す。 */
 export async function createUser(
   db: D1Database,

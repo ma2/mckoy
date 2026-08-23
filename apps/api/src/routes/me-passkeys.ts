@@ -3,7 +3,8 @@ import type { RegistrationResponseJSON } from '@simplewebauthn/server';
 import type { AppEnv } from '../types';
 import { requireSession } from '../auth/session';
 import { createRegistrationOptions, verifyRegistration } from '../auth/webauthn';
-import { createPasskey, countPasskeysByUserId, deleteOwnPasskey, listPasskeysByUserId } from '../db/passkeys';
+import { guessPasskeyName } from '../auth/device-name';
+import { createPasskey, countPasskeysByUserId, deletePasskeyByOwner, listPasskeysByUserId } from '../db/passkeys';
 
 // ログイン後の自分のパスキー管理（一覧・追加・削除）。仕様書 §7。
 
@@ -44,7 +45,7 @@ mePasskeysRoute.post('/verify', async (c) => {
     publicKey: verified.publicKey,
     counter: verified.counter,
     transports: verified.transports,
-    name: null,
+    name: guessPasskeyName(c.req.header('user-agent')),
   });
   return c.json({}, 201);
 });
@@ -56,7 +57,7 @@ mePasskeysRoute.delete('/:id', async (c) => {
   if (remaining <= 1) {
     return c.json({ error: 'cannot_delete_last_passkey' }, 409);
   }
-  const deleted = await deleteOwnPasskey(c.env.DB, c.req.param('id'), user.id);
+  const deleted = await deletePasskeyByOwner(c.env.DB, c.req.param('id'), user.id);
   if (!deleted) return c.json({ error: 'not_found' }, 404);
   return c.body(null, 204);
 });

@@ -1,14 +1,23 @@
 import { useEffect, useState } from 'react';
 import Breadcrumb from '../components/Breadcrumb';
+import { useAuth } from '../lib/auth';
 import { api } from '../lib/api';
 import { addPasskey } from '../lib/webauthn';
+import { listUsers, listUserPasskeys, deleteUserPasskey, type AdminUser, type AdminPasskey } from '../lib/admin';
 
 type Passkey = { id: string; name: string | null; createdAt: string; lastUsedAt: string | null };
 
-/** 自分のパスキー管理画面。一覧・追加・削除ができる（仕様書 §7）。 */
+/** 自分のパスキー管理画面。一覧・追加・削除ができる（仕様書 §7）。管理者のみ、手動復旧用に他ユーザーのパスキーも管理できる（仕様書 §7.1）。 */
 export default function Passkeys() {
+  const { state } = useAuth();
+  const isAdmin = state.status === 'authenticated' && state.user.isAdmin;
   const [passkeys, setPasskeys] = useState<Passkey[]>([]);
   const [error, setError] = useState<string | null>(null);
+
+  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState('');
+  const [targetPasskeys, setTargetPasskeys] = useState<AdminPasskey[]>([]);
+  const [adminError, setAdminError] = useState<string | null>(null);
 
   async function load() {
     const result = await api.get<{ passkeys: Passkey[] }>('/me/passkeys');
@@ -18,6 +27,20 @@ export default function Passkeys() {
   useEffect(() => {
     load();
   }, []);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    listUsers().then((result) => setUsers(result.users));
+  }, [isAdmin]);
+
+  async function loadTargetPasskeys(userId: string) {
+    if (!userId) {
+      setTargetPasskeys([]);
+      return;
+    }
+    const result = await listUserPasskeys(userId);
+    setTargetPasskeys(result.passkeys);
+  }
 
   async function handleAdd() {
     setError(null);
@@ -36,6 +59,16 @@ export default function Passkeys() {
       await load();
     } catch {
       setError('削除できませんでした（最後の1件は削除できません）。');
+    }
+  }
+
+  async function handleDeleteTargetPasskey(id: string) {
+    setAdminError(null);
+    try {
+      await deleteUserPasskey(selectedUserId, id);
+      await loadTargetPasskeys(selectedUserId);
+    } catch {
+      setAdminError('失効に失敗しました。');
     }
   }
 
@@ -62,6 +95,56 @@ export default function Passkeys() {
         </ul>
       )}
       <button onClick={handleAdd}>パスキーを追加</button>
+
+      {isAdmin && (
+        <div className="card" style={{ marginTop: 'var(--space-6)' }}>
+          <h2 style={{ marginTop: 0 }}>ユーザーのパスキー管理（手動復旧用）</h2>
+          <p style={{ color: 'var(--text-muted)' }}>
+            パスキーをすべて失ったユーザーについて、既存パスキーを失効させた上で「招待管理」から
+            再登録用の招待URLを発行してください（仕様書 §7.1）。
+          </p>
+          <label className="field">
+            対象ユーザー
+            <select
+              value={selectedUserId}
+              onChange={(e) => {
+                setSelectedUserId(e.target.value);
+                loadTargetPasskeys(e.target.value);
+              }}
+            >
+              <option value="">選択してください</option>
+              {users.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.name}（{u.email}）
+                </option>
+              ))}
+            </select>
+          </label>
+          {adminError && <p className="error">{adminError}</p>}
+          {selectedUserId &&
+            (targetPasskeys.length === 0 ? (
+              <p className="empty-state">このユーザーのパスキーはありません。</p>
+            ) : (
+              <ul className="entry-list">
+                {targetPasskeys.map((p) => (
+                  <li
+                    key={p.id}
+                    className="entry-list__item"
+                    style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                  >
+                    <div>
+                      <h3>{p.name ?? '(名前未設定)'}</h3>
+                      <p className="entry-list__meta">登録日: {p.createdAt}</p>
+                    </div>
+                    <button className="btn-danger" onClick={() => handleDeleteTargetPasskey(p.id)}>
+                      失効
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ))}
+        </div>
+      )}
     </main>
   );
 }
