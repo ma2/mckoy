@@ -137,6 +137,18 @@ describe('comment posting authorization', () => {
     expect(res.status).toBe(201);
   });
 
+  it('lists comments newest first (issue #18)', async () => {
+    const { app, instructor, novelId } = await seedCourseWithNovel();
+    const cookie = await loginAs(app, instructor.id);
+    await app.request(`/novels/${novelId}/comments`, jsonRequest('POST', cookie, { body: 'first' }), env);
+    await app.request(`/novels/${novelId}/comments`, jsonRequest('POST', cookie, { body: 'second' }), env);
+
+    const listRes = await app.request(`/novels/${novelId}/comments`, { headers: { cookie } }, env);
+    const { comments } = await listRes.json<{ comments: { body: string; createdAt: string }[] }>();
+    expect(comments.map((c) => c.body)).toEqual(['second', 'first']);
+    expect(comments[0]!.createdAt).toBeTruthy();
+  });
+
   it('a user who cannot see the novel cannot see its comments either', async () => {
     const { app, instructor, novelId } = await seedCourseWithNovel('instructors');
     const instructorCookie = await loginAs(app, instructor.id);

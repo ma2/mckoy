@@ -25,7 +25,11 @@ export async function createComment(
     .run();
 }
 
-/** 小説へのコメントを投稿順に、投稿者の氏名付きで返す。閲覧可否は小説自体のvisibilityに従う（呼び出し側で判定）。 */
+/**
+ * 小説へのコメントを新しい順に、投稿者の氏名付きで返す（issue #18）。閲覧可否は
+ * 小説自体のvisibilityに従う（呼び出し側で判定）。created_atは秒単位の精度しかないため、
+ * 同じ秒内に複数件投稿されても順序が不定にならないようrowidを第2キーにする。
+ */
 export async function listCommentsByNovel(db: D1Database, novelId: string): Promise<CommentWithUserRow[]> {
   const { results } = await db
     .prepare(
@@ -33,7 +37,7 @@ export async function listCommentsByNovel(db: D1Database, novelId: string): Prom
        FROM comments c
        JOIN users u ON u.id = c.user_id
        WHERE c.novel_id = ?
-       ORDER BY c.created_at ASC, c.rowid ASC`,
+       ORDER BY c.created_at DESC, c.rowid DESC`,
     )
     .bind(novelId)
     .all<CommentWithUserRow>();
