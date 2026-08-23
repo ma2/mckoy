@@ -30,6 +30,7 @@ export default function CourseList() {
     }
   }
 
+  const isAdmin = state.status === 'authenticated' && state.user.isAdmin;
   const canCreate = state.status === 'authenticated' && (state.user.isAdmin || state.user.canTeach);
 
   return (
@@ -61,9 +62,11 @@ export default function CourseList() {
                   {roleLabel[course.myMembership.role]} / {statusLabel[course.myMembership.status]}
                 </span>
               ) : (
-                <button className="btn-secondary" onClick={() => handleJoin(course.id)}>
-                  参加申請
-                </button>
+                !isAdmin && (
+                  <button className="btn-secondary" onClick={() => handleJoin(course.id)}>
+                    参加申請
+                  </button>
+                )
               )}
             </li>
           ))}

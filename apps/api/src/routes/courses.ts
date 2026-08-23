@@ -169,9 +169,11 @@ coursesRoute.get('/:id/members', async (c) => {
  * 生徒からの参加申請（仕様書 §9.1）。roleは常にstudent固定
  * （自己申告で講師になることはできない）。pending membershipを作成し、
  * 講師の承認を待つ。既にmembershipがあれば（pending/active/rejectedいずれでも）再申請不可。
+ * 管理者はどの講座にも既に全権限でアクセスできるため参加申請自体ができない（issue #37）。
  */
 coursesRoute.post('/:id/join', async (c) => {
   const user = c.get('user');
+  if (user.isAdmin) return c.json({ error: 'admin_cannot_join' }, 403);
   const courseId = c.req.param('id');
   const course = await getCourseById(c.env.DB, courseId);
   if (!course) return c.json({ error: 'not_found' }, 404);
