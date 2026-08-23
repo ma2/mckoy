@@ -5,6 +5,7 @@ import {
   approveMember,
   createCourseInvitation,
   getCourse,
+  getMyMembership,
   joinCourse,
   listMembers,
   rejectMember,
@@ -13,6 +14,8 @@ import {
   updateCourse,
   type Course,
   type Member,
+  type MembershipRole,
+  type MembershipStatus,
 } from '../lib/courses';
 
 /**
@@ -26,6 +29,7 @@ export default function CourseDetail() {
   const [course, setCourse] = useState<Course | null>(null);
   const [members, setMembers] = useState<Member[] | null>(null);
   const [canManage, setCanManage] = useState(false);
+  const [myMembership, setMyMembership] = useState<{ role: MembershipRole; status: MembershipStatus } | null>(null);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [inviteName, setInviteName] = useState('');
@@ -39,6 +43,9 @@ export default function CourseDetail() {
     setCourse(course);
     setName(course.name);
     setDescription(course.description ?? '');
+
+    const { membership } = await getMyMembership(id);
+    setMyMembership(membership);
 
     // メンバー一覧APIは講師/管理者専用なので、これが通るかどうかで
     // 「自分がこの講座を管理できるか」を判定する。
@@ -78,6 +85,7 @@ export default function CourseDetail() {
     try {
       await joinCourse(id);
       setMessage('参加申請を送信しました。');
+      await load();
     } catch {
       setMessage('参加申請に失敗しました（既に申請済みの可能性があります）。');
     }
@@ -128,7 +136,13 @@ export default function CourseDetail() {
       {!canManage && (
         <div className="card">
           <p>{course.description || '説明はまだ登録されていません。'}</p>
-          <button onClick={handleJoin}>参加申請</button>
+          {myMembership ? (
+            <span className="badge">
+              {roleLabel[myMembership.role]} / {statusLabel[myMembership.status]}
+            </span>
+          ) : (
+            <button onClick={handleJoin}>参加申請</button>
+          )}
         </div>
       )}
 
