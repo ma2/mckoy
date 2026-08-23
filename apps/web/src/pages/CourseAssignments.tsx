@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
+import Breadcrumb from '../components/Breadcrumb';
 import { useAuth } from '../lib/auth';
 import { getCourse, getMyMembership, type Course } from '../lib/courses';
 import { listAssignments, createAssignment, type Assignment } from '../lib/assignments';
@@ -51,6 +52,13 @@ export default function CourseAssignments() {
 
   return (
     <main className="page">
+      <Breadcrumb
+        items={[
+          { label: '講座一覧', to: '/courses' },
+          { label: course?.name ?? '講座', to: `/courses/${courseId}` },
+          { label: '課題' },
+        ]}
+      />
       <h1>課題</h1>
       {error && <p className="error">{error}</p>}
       {assignments.length === 0 ? (
@@ -90,9 +98,6 @@ export default function CourseAssignments() {
           </form>
         </div>
       )}
-      <Link className="back-link" to={`/courses/${courseId}`}>
-        {course ? `${course.name} トップへ` : '講座トップへ'}
-      </Link>
     </main>
   );
 }

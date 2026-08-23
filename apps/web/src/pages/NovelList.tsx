@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import Breadcrumb from '../components/Breadcrumb';
 import { getCourse, getMyMembership, type Course } from '../lib/courses';
 import { listNovels, type NovelSummary } from '../lib/novels';
 
@@ -27,6 +28,13 @@ export default function NovelList() {
 
   return (
     <main className="page">
+      <Breadcrumb
+        items={[
+          { label: '講座一覧', to: '/courses' },
+          { label: course?.name ?? '講座', to: `/courses/${courseId}` },
+          { label: '小説一覧' },
+        ]}
+      />
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
         <h1>{course ? `${course.name} の小説一覧` : '小説一覧'}</h1>
         {canPost && <Link to={`/courses/${courseId}/novels/new`}>＋ 小説を投稿</Link>}
@@ -53,9 +61,6 @@ export default function NovelList() {
           ))}
         </ul>
       )}
-      <Link className="back-link" to={`/courses/${courseId}`}>
-        {course ? `${course.name} トップへ` : '講座トップへ'}
-      </Link>
     </main>
   );
 }
