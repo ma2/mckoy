@@ -23,12 +23,10 @@ export default function AppHeader() {
         <span>Mckoy</span>
       </Link>
       <nav className="app-header__nav">
-        <Link to="/courses">講座一覧</Link>
-        <Link to="/passkeys">パスキー管理</Link>
         {user.isAdmin && <Link to="/admin/invitations">招待管理</Link>}
       </nav>
       <div className="app-header__user">
-        <span>{user.name} さん</span>
+        <Link to="/">{user.name} さん</Link>
         <button className="btn-secondary" onClick={handleLogout}>
           ログアウト
         </button>

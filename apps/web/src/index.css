@@ -198,6 +198,14 @@ a:hover {
   color: var(--text-muted);
 }
 
+.app-header__user a {
+  color: var(--text-muted);
+}
+
+.app-header__user a:hover {
+  color: var(--primary);
+}
+
 /* ---------- カード / リスト ---------- */
 
 .card {
@@ -410,6 +418,23 @@ li button {
   margin-top: var(--space-6);
   font-size: 0.88rem;
   color: var(--text-muted);
+}
+
+/* ---------- パンくずリスト ---------- */
+
+.breadcrumb {
+  display: block;
+  margin-bottom: var(--space-4);
+  font-size: 0.88rem;
+  color: var(--text-muted);
+}
+
+.breadcrumb a {
+  color: var(--text-muted);
+}
+
+.breadcrumb__sep {
+  margin: 0 0.3rem;
 }
 
 code {

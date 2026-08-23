@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
+import Breadcrumb from '../components/Breadcrumb';
 import { useAuth } from '../lib/auth';
 import { getCourse, getMyMembership, type Course } from '../lib/courses';
 import { listAnnouncements, createAnnouncement, type Announcement } from '../lib/announcements';
@@ -49,6 +50,13 @@ export default function CourseAnnouncements() {
 
   return (
     <main className="page">
+      <Breadcrumb
+        items={[
+          { label: '講座一覧', to: '/courses' },
+          { label: course?.name ?? '講座', to: `/courses/${courseId}` },
+          { label: 'お知らせ' },
+        ]}
+      />
       <h1>お知らせ</h1>
       {error && <p className="error">{error}</p>}
       {announcements.length === 0 ? (
@@ -80,9 +88,6 @@ export default function CourseAnnouncements() {
           </form>
         </div>
       )}
-      <Link className="back-link" to={`/courses/${courseId}`}>
-        {course ? `${course.name} トップへ` : '講座トップへ'}
-      </Link>
     </main>
   );
 }
