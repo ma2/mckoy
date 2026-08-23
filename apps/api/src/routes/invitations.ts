@@ -10,6 +10,7 @@ import { getCourseById } from '../db/courses';
 import { createMembership, type MembershipRole } from '../db/course_memberships';
 import { createRegistrationOptions, verifyRegistration } from '../auth/webauthn';
 import { issueSession } from '../auth/session';
+import { guessPasskeyName } from '../auth/device-name';
 
 // 招待の確認・受諾（パスキー登録による新規アカウント作成）を扱う。
 // 招待の「作成」は routes/admin-invitations.ts / routes/courses.ts の役割。
@@ -103,7 +104,7 @@ invitationsRoute.post('/:token/register/verify', async (c) => {
     publicKey: verified.publicKey,
     counter: verified.counter,
     transports: verified.transports,
-    name: null,
+    name: guessPasskeyName(c.req.header('user-agent')),
   });
   await grantCourseMembershipIfInvited(c.env.DB, invitation, user.id);
   await markInvitationUsed(c.env.DB, invitation.id);

@@ -55,8 +55,12 @@ export async function touchPasskeyUsage(db: D1Database, id: string, counter: num
     .run();
 }
 
-/** そのパスキーがuserIdの所有物である場合のみ削除する。削除できたかどうかを返す。 */
-export async function deleteOwnPasskey(db: D1Database, id: string, userId: string): Promise<boolean> {
+/**
+ * そのパスキーがuserIdの所有物である場合のみ削除する。削除できたかどうかを返す。
+ * 本人によるセルフサービス削除（routes/me-passkeys.ts）と、管理者による手動復旧
+ * 目的の削除（routes/admin-users.ts、仕様書 §7.1）の両方から呼ばれる。
+ */
+export async function deletePasskeyByOwner(db: D1Database, id: string, userId: string): Promise<boolean> {
   const result = await db.prepare('DELETE FROM passkeys WHERE id = ? AND user_id = ?').bind(id, userId).run();
   return (result.meta.changes ?? 0) > 0;
 }

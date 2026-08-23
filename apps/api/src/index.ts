@@ -3,6 +3,7 @@ import type { AppEnv } from './types';
 import { authRoute } from './routes/auth';
 import { invitationsRoute } from './routes/invitations';
 import { adminInvitationsRoute } from './routes/admin-invitations';
+import { adminUsersRoute } from './routes/admin-users';
 import { mePasskeysRoute } from './routes/me-passkeys';
 import { coursesRoute } from './routes/courses';
 import { novelsRoute } from './routes/novels';
@@ -18,6 +19,7 @@ app.get('/api/health', (c) => c.json({ ok: true }));
 app.route('/api/auth', authRoute);
 app.route('/api/invitations', invitationsRoute);
 app.route('/api/admin/invitations', adminInvitationsRoute);
+app.route('/api/admin/users', adminUsersRoute);
 app.route('/api/courses', coursesRoute);
 app.route('/api/novels', novelsRoute);
 
