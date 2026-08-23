@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import Breadcrumb from '../components/Breadcrumb';
 import { useAuth } from '../lib/auth';
 import { createGlobalInvitation } from '../lib/admin';
 
@@ -39,6 +39,7 @@ export default function AdminInvitations() {
 
   return (
     <main className="page">
+      <Breadcrumb items={[{ label: 'ホーム', to: '/' }, { label: '招待管理' }]} />
       <h1>招待管理</h1>
       <p style={{ color: 'var(--text-muted)' }}>
         講座に紐付かない招待（管理者・講師資格）を発行します。生徒を特定の講座に招待する場合は、
@@ -71,9 +72,6 @@ export default function AdminInvitations() {
           </p>
         )}
       </div>
-      <Link className="back-link" to="/">
-        ホームへ戻る
-      </Link>
     </main>
   );
 }

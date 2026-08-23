@@ -54,6 +54,7 @@ export default function CourseAssignments() {
     <main className="page">
       <Breadcrumb
         items={[
+          { label: 'ホーム', to: '/' },
           { label: '講座一覧', to: '/courses' },
           { label: course?.name ?? '講座', to: `/courses/${courseId}` },
           { label: '課題' },

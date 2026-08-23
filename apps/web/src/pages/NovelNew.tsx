@@ -1,10 +1,13 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import Breadcrumb from '../components/Breadcrumb';
+import { getCourse, type Course } from '../lib/courses';
 import { createNovel, type NovelVisibility } from '../lib/novels';
 
 /** 小説投稿画面。タグはカンマ区切りで入力させ、送信時に配列へ分割する。公開範囲の初期値は仕様書どおり「講師のみ」。 */
 export default function NovelNew() {
   const { id: courseId } = useParams<{ id: string }>();
+  const [course, setCourse] = useState<Course | null>(null);
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [plot, setPlot] = useState('');
@@ -13,6 +16,11 @@ export default function NovelNew() {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!courseId) return;
+    getCourse(courseId).then((result) => setCourse(result.course));
+  }, [courseId]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -40,6 +48,15 @@ export default function NovelNew() {
 
   return (
     <main className="page">
+      <Breadcrumb
+        items={[
+          { label: 'ホーム', to: '/' },
+          { label: '講座一覧', to: '/courses' },
+          { label: course?.name ?? '講座', to: `/courses/${courseId}` },
+          { label: '小説一覧', to: `/courses/${courseId}/novels` },
+          { label: '小説を投稿' },
+        ]}
+      />
       <h1>小説を投稿</h1>
       <div className="card">
         <form onSubmit={handleSubmit}>

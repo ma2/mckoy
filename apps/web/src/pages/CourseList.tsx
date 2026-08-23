@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import Breadcrumb from '../components/Breadcrumb';
 import { useAuth } from '../lib/auth';
 import { listCourses, joinCourse, roleLabel, statusLabel, type Course } from '../lib/courses';
 
@@ -33,6 +34,7 @@ export default function CourseList() {
 
   return (
     <main className="page">
+      <Breadcrumb items={[{ label: 'ホーム', to: '/' }, { label: '講座一覧' }]} />
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
         <h1>講座一覧</h1>
         {canCreate && <Link to="/courses/new">＋ 新しい講座を作成</Link>}
@@ -67,9 +69,6 @@ export default function CourseList() {
           ))}
         </ul>
       )}
-      <Link className="back-link" to="/">
-        ホームへ戻る
-      </Link>
     </main>
   );
 }
