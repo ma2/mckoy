@@ -66,6 +66,27 @@ Mckoy は、小説創作講座で利用する会員制の小説投稿・管理�
 - 1ユーザーにつき複数のパスキーを登録可能とする
 - パスワード認証は提供しない
 
+### デプロイ環境
+
+Cloudflare Workers 上に、`apps/api/wrangler.toml` の `[env.<name>]` ブロックで区別する
+2つの環境を用意する。いずれもAPIと（ビルド済みの）フロントエンドを同一Workerから配信する
+構成（`[env.<name>.assets]`、`run_worker_first = ["/api/*"]`）を踏襲し、CORSやクロスサイト
+Cookieの複雑さを避ける。
+
+- **本番環境**（`[env.production]`）: `master` ブランチの内容をデプロイする。Worker名
+  `mckoy-api`、D1データベース `mckoy_db`。
+- **ステージング環境**（`[env.staging]`）: `dev` ブランチの内容を、`master` へマージする前に
+  実際に動かして動作確認するための環境。Worker名・D1データベースは本番とは別に用意する
+  （例: `mckoy-api-staging` / `mckoy_db_staging`）。
+
+WebAuthn は `RP_ID`/`RP_ORIGIN` がオリジンに紐づくため、本番とステージングは別ドメイン
+（別の `*.workers.dev` サブドメイン）になり、パスキーを環境間で共有できない。ステージング用の
+管理者パスキーは、本番とは別に `seed-admin.mjs --remote`（`MCKOY_RP_ORIGIN` をステージングの
+オリジンに設定して実行）で個別に作成する。
+
+デプロイは自動化せず、必要なタイミングで手動実行する（本番デプロイと同じ運用方針）。
+`dev` ブランチへのpush毎に自動デプロイするCIパイプラインは初版では構築しない。
+
 ---
 
 ## 4. ユーザー種別と権限モデル
