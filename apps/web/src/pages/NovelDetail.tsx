@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
+import Breadcrumb from '../components/Breadcrumb';
 import { useAuth } from '../lib/auth';
 import { deleteNovel, getNovel, listRevisions, updateNovel, type Novel, type NovelVisibility, type Revision } from '../lib/novels';
 import { listComments, createComment, type Comment } from '../lib/comments';
-import { getMyMembership } from '../lib/courses';
+import { getCourse, getMyMembership, type Course } from '../lib/courses';
 
 const visibilityLabel: Record<string, string> = {
   instructors: '講師のみ',
@@ -21,6 +22,7 @@ export default function NovelDetail() {
   const { state } = useAuth();
   const navigate = useNavigate();
   const [novel, setNovel] = useState<Novel | null>(null);
+  const [course, setCourse] = useState<Course | null>(null);
   const [revisions, setRevisions] = useState<Revision[]>([]);
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
@@ -40,6 +42,8 @@ export default function NovelDetail() {
     try {
       const { novel } = await getNovel(id);
       setNovel(novel);
+      const { course } = await getCourse(novel.courseId);
+      setCourse(course);
       setTitle(novel.title);
       setBody(novel.body);
       setPlot(novel.plot ?? '');
@@ -134,6 +138,14 @@ export default function NovelDetail() {
 
   return (
     <main className="page">
+      <Breadcrumb
+        items={[
+          { label: '講座一覧', to: '/courses' },
+          { label: course?.name ?? '講座', to: `/courses/${novel.courseId}` },
+          { label: '小説一覧', to: `/courses/${novel.courseId}/novels` },
+          { label: novel.title },
+        ]}
+      />
       <h1>{novel.title}</h1>
       <div style={{ marginBottom: 'var(--space-4)' }}>
         <span className="badge" style={{ marginRight: 'var(--space-2)' }}>
@@ -250,10 +262,6 @@ export default function NovelDetail() {
           </form>
         </div>
       )}
-
-      <Link className="back-link" to={`/courses/${novel.courseId}/novels`}>
-        小説一覧へ戻る
-      </Link>
     </main>
   );
 }
