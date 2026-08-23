@@ -7,6 +7,7 @@ export default function Home() {
 
   if (state.status !== 'authenticated') return null;
   const { user } = state;
+  const canCreateCourse = user.isAdmin || user.canTeach;
 
   return (
     <main className="page">
@@ -22,7 +23,11 @@ export default function Home() {
       <ul className="entry-list">
         <li className="entry-list__item">
           <Link to="/courses">講座一覧</Link>
-          <p className="entry-list__meta">参加中の講座を確認したり、新しい講座に参加申請します。</p>
+          <p className="entry-list__meta">
+            {canCreateCourse
+              ? '参加中の講座を確認したり、新しい講座を作成します。'
+              : '参加中の講座を確認したり、新しい講座に参加申請します。'}
+          </p>
         </li>
         <li className="entry-list__item">
           <Link to="/passkeys">パスキー管理</Link>
