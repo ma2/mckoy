@@ -55,5 +55,22 @@ export const rejectMember = (courseId: string, membershipId: string) =>
 export const createCourseInvitation = (courseId: string, params: { name: string; email: string }) =>
   api.post<{ invitationUrl: string }>(`/courses/${courseId}/invitations`, params);
 
+export type CourseInvitation = {
+  id: string;
+  name: string;
+  email: string;
+  expiresAt: string;
+  usedAt: string | null;
+  revokedAt: string | null;
+  createdAt: string;
+};
+
+export const listCourseInvitations = (courseId: string) =>
+  api.get<{ invitations: CourseInvitation[] }>(`/courses/${courseId}/invitations`);
+
+/** 招待を失効させる（仕様書 §5.4）。 */
+export const revokeCourseInvitation = (courseId: string, invitationId: string) =>
+  api.delete<void>(`/courses/${courseId}/invitations/${invitationId}`);
+
 export const getMyMembership = (courseId: string) =>
   api.get<{ membership: { role: MembershipRole; status: MembershipStatus } | null }>(`/courses/${courseId}/membership`);

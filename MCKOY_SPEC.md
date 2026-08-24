@@ -212,6 +212,13 @@ D1 にはトークンの平文を保存せず、SHA-256 等でハッシュ化し
 - 管理者または招待元講師が失効可能
 - 必要に応じて再発行可能
 
+失効は物理削除ではなく `revoked_at` の記録のみ（issue #42）。講座に紐付かない招待
+（管理者・講師付与）は管理者のみが一覧・失効でき（`GET`/`DELETE /api/admin/invitations`）、
+講座紐付きの生徒招待はその講座を管理できる講師（`canManageCourse` — 招待元本人に限らず、
+その講座のactive講師なら誰でも）または管理者が一覧・失効できる（`GET`/`DELETE
+/api/courses/:id/invitations`）。「再発行」は同じ招待を使い回す機能ではなく、失効後に
+新しい招待を改めて作成する運用を指す。
+
 ### 5.5 初回登録フロー
 
 1. 管理者または講師が招待を作成する。
@@ -815,6 +822,9 @@ POST   /api/courses/:id/join
 POST   /api/courses/:id/members/:membershipId/approve
 POST   /api/courses/:id/members/:membershipId/reject
 
+GET    /api/courses/:id/invitations       # 講座紐付きの生徒招待の一覧。canManageCourse（§5.4）
+DELETE /api/courses/:id/invitations/:id   # 講座紐付きの生徒招待を失効させる。canManageCourse（§5.4）
+
 GET    /api/courses/:id/novels
 POST   /api/courses/:id/novels
 GET    /api/novels/:id
@@ -830,7 +840,9 @@ POST   /api/courses/:id/assignments
 GET    /api/courses/:id/announcements
 POST   /api/courses/:id/announcements
 
+GET    /api/admin/invitations       # 講座に紐付かない招待の一覧。管理者専用
 POST   /api/admin/invitations
+DELETE /api/admin/invitations/:id   # 講座に紐付かない招待を失効させる。管理者専用（§5.4）
 POST   /api/invitations/:token/register
 ```
 

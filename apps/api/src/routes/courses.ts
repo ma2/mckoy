@@ -2,6 +2,7 @@ import { Hono, type Context } from 'hono';
 import type { AppEnv } from '../types';
 import { requireSession } from '../auth/session';
 import { issueInvitation } from '../auth/invitation';
+import { getInvitationById, listInvitations, revokeInvitation } from '../db/invitations';
 import { createCourse, getCourseById, listCourses, updateCourse } from '../db/courses';
 import {
   createMembership,
@@ -241,6 +242,42 @@ coursesRoute.post('/:id/invitations', async (c) => {
   });
 
   return c.json({ invitationUrl: `${c.env.RP_ORIGIN}/invitations/${token}` }, 201);
+});
+
+/** 講座紐付きの生徒招待の一覧（新しい順）。canManageCourseで許可された講師/管理者のみ。 */
+coursesRoute.get('/:id/invitations', async (c) => {
+  const user = c.get('user');
+  const courseId = c.req.param('id');
+  if (!(await canManageCourse(c.env.DB, user, courseId))) {
+    return c.json({ error: 'forbidden' }, 403);
+  }
+
+  const invitations = await listInvitations(c.env.DB, courseId);
+  return c.json({
+    invitations: invitations.map((i) => ({
+      id: i.id,
+      name: i.name,
+      email: i.email,
+      expiresAt: i.expires_at,
+      usedAt: i.used_at,
+      revokedAt: i.revoked_at,
+      createdAt: i.created_at,
+    })),
+  });
+});
+
+/** 講座紐付きの生徒招待を失効させる（仕様書 §5.4）。canManageCourseで許可された講師/管理者のみ。 */
+coursesRoute.delete('/:id/invitations/:invitationId', async (c) => {
+  const user = c.get('user');
+  const courseId = c.req.param('id');
+  if (!(await canManageCourse(c.env.DB, user, courseId))) {
+    return c.json({ error: 'forbidden' }, 403);
+  }
+
+  const invitation = await getInvitationById(c.env.DB, c.req.param('invitationId'));
+  if (!invitation || invitation.course_id !== courseId) return c.json({ error: 'not_found' }, 404);
+  await revokeInvitation(c.env.DB, invitation.id);
+  return c.body(null, 204);
 });
 
 /** 呼び出しユーザー自身がその講座で何者か（role/status）を返す。フロントがUI表示を出し分けるために使う自己参照エンドポイント。 */

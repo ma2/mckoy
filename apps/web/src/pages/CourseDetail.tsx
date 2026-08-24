@@ -8,16 +8,20 @@ import {
   getCourse,
   getMyMembership,
   joinCourse,
+  listCourseInvitations,
   listMembers,
   rejectMember,
+  revokeCourseInvitation,
   roleLabel,
   statusLabel,
   updateCourse,
   type Course,
+  type CourseInvitation,
   type Member,
   type MembershipRole,
   type MembershipStatus,
 } from '../lib/courses';
+import { invitationStatus } from '../lib/invitationStatus';
 
 /**
  * 講座詳細画面。誰が見ても名称・説明・小説一覧等へのリンクは出るが、
@@ -37,6 +41,8 @@ export default function CourseDetail() {
   const [inviteEmail, setInviteEmail] = useState('');
   const [invitationUrl, setInvitationUrl] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [invitations, setInvitations] = useState<CourseInvitation[]>([]);
+  const [invitationsError, setInvitationsError] = useState<string | null>(null);
 
   async function load() {
     if (!id) return;
@@ -54,6 +60,8 @@ export default function CourseDetail() {
       const result = await listMembers(id);
       setMembers(result.members);
       setCanManage(true);
+      const { invitations } = await listCourseInvitations(id);
+      setInvitations(invitations);
     } catch (err) {
       if (err instanceof ApiError && err.status === 403) {
         setCanManage(false);
@@ -112,6 +120,18 @@ export default function CourseDetail() {
     setInvitationUrl(invitationUrl);
     setInviteName('');
     setInviteEmail('');
+    await load();
+  }
+
+  async function handleRevokeInvitation(invitationId: string) {
+    if (!id) return;
+    setInvitationsError(null);
+    try {
+      await revokeCourseInvitation(id, invitationId);
+      await load();
+    } catch {
+      setInvitationsError('招待の失効に失敗しました。');
+    }
   }
 
   if (!course) {
@@ -219,6 +239,36 @@ export default function CourseDetail() {
               </p>
             )}
           </div>
+
+          <h2>発行済みの招待</h2>
+          {invitationsError && <p className="error">{invitationsError}</p>}
+          {invitations.length === 0 ? (
+            <p className="empty-state">まだ招待はありません。</p>
+          ) : (
+            <ul className="entry-list">
+              {invitations.map((inv) => {
+                const status = invitationStatus(inv);
+                return (
+                  <li
+                    key={inv.id}
+                    className="entry-list__item"
+                    style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                  >
+                    <div>
+                      <h3>{inv.name}</h3>
+                      <p className="entry-list__meta">{inv.email}</p>
+                      <span className={status === '有効' ? 'badge badge-accent' : 'badge'}>{status}</span>
+                    </div>
+                    {status === '有効' && (
+                      <button className="btn-danger" onClick={() => handleRevokeInvitation(inv.id)}>
+                        失効
+                      </button>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </>
       )}
     </main>

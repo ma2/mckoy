@@ -252,3 +252,70 @@ describe('join requests', () => {
     expect(await getMembershipByCourseAndUser(env.DB, courseId, admin.id)).toBeNull();
   });
 });
+
+describe('course invitations listing/revocation (issue #42)', () => {
+  it('rejects a non-instructor from listing course invitations', async () => {
+    const app = buildApp();
+    const { id: courseId, owner } = await seedCourse();
+    const cookie = await loginAs(app, owner.id);
+    await app.request(
+      `/courses/${courseId}/invitations`,
+      jsonRequest('POST', cookie, { name: 'Student', email: `student-${crypto.randomUUID()}@example.com` }),
+      env,
+    );
+
+    const outsider = await createTestUser();
+    const outsiderCookie = await loginAs(app, outsider.id);
+    const res = await app.request(`/courses/${courseId}/invitations`, { headers: { cookie: outsiderCookie } }, env);
+    expect(res.status).toBe(403);
+  });
+
+  it('lets the course instructor list and revoke a course invitation', async () => {
+    const app = buildApp();
+    const { id: courseId, owner } = await seedCourse();
+    const cookie = await loginAs(app, owner.id);
+    await app.request(
+      `/courses/${courseId}/invitations`,
+      jsonRequest('POST', cookie, { name: 'Student', email: `student-${crypto.randomUUID()}@example.com` }),
+      env,
+    );
+
+    const listRes = await app.request(`/courses/${courseId}/invitations`, { headers: { cookie } }, env);
+    expect(listRes.status).toBe(200);
+    const { invitations } = await listRes.json<{ invitations: { id: string; revokedAt: string | null }[] }>();
+    expect(invitations).toHaveLength(1);
+    expect(invitations[0]!.revokedAt).toBeNull();
+
+    const revokeRes = await app.request(`/courses/${courseId}/invitations/${invitations[0]!.id}`, {
+      method: 'DELETE',
+      headers: { cookie },
+    }, env);
+    expect(revokeRes.status).toBe(204);
+
+    const listAfter = await app.request(`/courses/${courseId}/invitations`, { headers: { cookie } }, env);
+    const { invitations: after } = await listAfter.json<{ invitations: { revokedAt: string | null }[] }>();
+    expect(after[0]!.revokedAt).not.toBeNull();
+  });
+
+  it('rejects an instructor of a different course from revoking another course’s invitation', async () => {
+    const app = buildApp();
+    const { id: courseId, owner } = await seedCourse();
+    const cookie = await loginAs(app, owner.id);
+    await app.request(
+      `/courses/${courseId}/invitations`,
+      jsonRequest('POST', cookie, { name: 'Student', email: `student-${crypto.randomUUID()}@example.com` }),
+      env,
+    );
+    const listRes = await app.request(`/courses/${courseId}/invitations`, { headers: { cookie } }, env);
+    const { invitations } = await listRes.json<{ invitations: { id: string }[] }>();
+    const invitationId = invitations[0]!.id;
+
+    const { id: otherCourseId, owner: otherOwner } = await seedCourse();
+    const otherCookie = await loginAs(app, otherOwner.id);
+    const res = await app.request(`/courses/${otherCourseId}/invitations/${invitationId}`, {
+      method: 'DELETE',
+      headers: { cookie: otherCookie },
+    }, env);
+    expect(res.status).toBe(404);
+  });
+});
