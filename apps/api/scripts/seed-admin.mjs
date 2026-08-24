@@ -25,6 +25,11 @@ function arg(name, fallback) {
 const name = arg('name', 'Admin');
 const email = arg('email', 'admin@example.com');
 const remote = process.argv.includes('--remote');
+// --env/--db で対象環境を切り替えられる（本番がデフォルト）。ステージング環境
+// （仕様書 §3「デプロイ環境」）に管理者を作る場合は --env=staging --db=mckoy_db_staging
+// のように指定する。
+const wranglerEnv = arg('env', 'production');
+const dbName = arg('db', 'mckoy_db');
 const rpOrigin = process.env.MCKOY_RP_ORIGIN ?? (remote ? undefined : 'http://localhost:5173');
 if (remote && !rpOrigin) {
   console.error('--remote requires MCKOY_RP_ORIGIN to be set (e.g. https://mckoy-api.<subdomain>.workers.dev)');
@@ -50,8 +55,8 @@ const tmpFile = join(tmpdir(), `mckoy-seed-admin-${id}.sql`);
 writeFileSync(tmpFile, sql, 'utf8');
 
 const wranglerArgs = remote
-  ? ['wrangler', 'd1', 'execute', 'mckoy_db', '--env', 'production', '--remote', `--file=${tmpFile}`]
-  : ['wrangler', 'd1', 'execute', 'mckoy_db', '--local', `--file=${tmpFile}`];
+  ? ['wrangler', 'd1', 'execute', dbName, '--env', wranglerEnv, '--remote', `--file=${tmpFile}`]
+  : ['wrangler', 'd1', 'execute', dbName, '--local', `--file=${tmpFile}`];
 
 try {
   execFileSync('npx', wranglerArgs, {
