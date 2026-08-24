@@ -14,6 +14,7 @@ import NovelDetail from './pages/NovelDetail';
 import CourseAssignments from './pages/CourseAssignments';
 import CourseAnnouncements from './pages/CourseAnnouncements';
 import AdminInvitations from './pages/AdminInvitations';
+import AdminDeletedNovels from './pages/AdminDeletedNovels';
 import AppHeader from './components/AppHeader';
 
 /**
@@ -129,6 +130,14 @@ export default function App() {
             element={
               <RequireAuth>
                 <AdminInvitations />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/admin/deleted-novels"
+            element={
+              <RequireAuth>
+                <AdminDeletedNovels />
               </RequireAuth>
             }
           />

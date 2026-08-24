@@ -158,6 +158,12 @@ export default function NovelDetail() {
           </span>
         ))}
       </div>
+      {novel.deletedAt && (
+        <p className="error">
+          この小説は {novel.deletedAt} に削除されています（管理者のため閲覧できています）。
+          {novel.deletionComment && <>削除コメント: {novel.deletionComment}</>}
+        </p>
+      )}
       {error && <p className="error">{error}</p>}
 
       {!isAuthor && (
