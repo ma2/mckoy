@@ -31,7 +31,15 @@ export default function CourseList() {
   }
 
   const isAdmin = state.status === 'authenticated' && state.user.isAdmin;
+  const isTeacherOnly = state.status === 'authenticated' && state.user.canTeach && !state.user.isAdmin;
   const canCreate = state.status === 'authenticated' && (state.user.isAdmin || state.user.canTeach);
+
+  // 講師（can_teach、管理者を除く）には、全く関わりのない講座まで並ぶと運用上紛らわしいため、
+  // 自分が作った講座や既に何らかの形で関わっている講座（myMembershipがある講座）のみ表示する。
+  // 別の講座に生徒として参加する機能自体は残す（招待URL・講座詳細ページからの参加申請は
+  // 引き続き可能。ここで絞るのは一覧表示のみ）。管理者・生徒には従来通り全講座を表示する
+  // （生徒は新しい講座を探して参加申請できる必要があるため）。仕様書 §9.4 / issue #49。
+  const visibleCourses = isTeacherOnly ? courses.filter((c) => c.myMembership !== null) : courses;
 
   return (
     <main className="page">
@@ -41,11 +49,11 @@ export default function CourseList() {
         {canCreate && <Link to="/courses/new">＋ 新しい講座を作成</Link>}
       </div>
       {message && <p className="notice">{message}</p>}
-      {courses.length === 0 ? (
+      {visibleCourses.length === 0 ? (
         <p className="empty-state">まだ講座がありません。</p>
       ) : (
         <ul className="entry-list">
-          {courses.map((course) => (
+          {visibleCourses.map((course) => (
             <li
               key={course.id}
               className="entry-list__item"
