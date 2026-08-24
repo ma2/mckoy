@@ -22,9 +22,6 @@ export default function AppHeader() {
         <img src="/logo.svg" alt="" width={28} height={28} />
         <span>Mckoy</span>
       </Link>
-      <nav className="app-header__nav">
-        {user.isAdmin && <Link to="/admin/invitations">招待管理</Link>}
-      </nav>
       <div className="app-header__user">
         <Link to="/">{user.name} さん</Link>
         <button className="btn-secondary" onClick={handleLogout}>

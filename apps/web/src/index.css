@@ -173,23 +173,6 @@ a:hover {
   font-weight: 600;
 }
 
-.app-header__nav {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-  flex-wrap: wrap;
-}
-
-.app-header__nav a {
-  color: var(--text-muted);
-  font-size: 0.92rem;
-}
-
-.app-header__nav a:hover,
-.app-header__nav a.active {
-  color: var(--primary);
-}
-
 .app-header__user {
   display: flex;
   align-items: center;
