@@ -17,7 +17,10 @@ npm workspaces による monorepo。`apps/api`（Cloudflare Workers + Hono + D1�
   異なり最後の1件も失効可）。失効後は `/api/admin/users/:userId/passkey-reset-invitation` で
   そのユーザー宛のパスキー再登録招待（`invitations.target_user_id`）を発行できる。この招待は
   通常の招待と異なり新規アカウントを作らず、既存ユーザーへパスキーを追加するだけなので、
-  講座membership・投稿した小説等の既存データがそのまま引き継がれる。
+  講座membership・投稿した小説等の既存データがそのまま引き継がれる。招待は失効
+  （`revoked_at`記録のみ、物理削除しない）でき、`GET`/`DELETE /api/admin/invitations/:id`
+  で講座に紐付かない招待（管理者専用）、`GET`/`DELETE /api/courses/:id/invitations/:id`で
+  講座紐付きの生徒招待（`canManageCourse`）をそれぞれ一覧・失効できる（仕様書 §5.4、issue #42）。
 - Phase 2（講座）: courses / course_memberships、講座作成（作成者は同時にactive instructor
   membershipを得る）、講座編集、`/api/courses/:id/invitations`（講座紐付きの生徒招待、受諾で即active
   membership）、生徒からの参加申請（`/api/courses/:id/join`、pending→承認/拒否）。

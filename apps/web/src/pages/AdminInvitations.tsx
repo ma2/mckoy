@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Breadcrumb from '../components/Breadcrumb';
 import { useAuth } from '../lib/auth';
-import { createGlobalInvitation } from '../lib/admin';
+import { createGlobalInvitation, listGlobalInvitations, revokeGlobalInvitation, type GlobalInvitation } from '../lib/admin';
+import { invitationStatus } from '../lib/invitationStatus';
 
 /** 管理者専用の招待発行画面（講座に紐付かない、管理者・講師資格の付与）。仕様書 §22 の管理者画面「招待管理」。 */
 export default function AdminInvitations() {
@@ -12,8 +13,22 @@ export default function AdminInvitations() {
   const [canTeach, setCanTeach] = useState(false);
   const [invitationUrl, setInvitationUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [invitations, setInvitations] = useState<GlobalInvitation[]>([]);
+  const [listError, setListError] = useState<string | null>(null);
 
-  if (state.status !== 'authenticated' || !state.user.isAdmin) {
+  const isAdminUser = state.status === 'authenticated' && state.user.isAdmin;
+
+  async function loadInvitations() {
+    const { invitations } = await listGlobalInvitations();
+    setInvitations(invitations);
+  }
+
+  useEffect(() => {
+    if (!isAdminUser) return;
+    loadInvitations();
+  }, [isAdminUser]);
+
+  if (!isAdminUser) {
     return (
       <main className="page">
         <p className="error">管理者のみ利用できます。</p>
@@ -32,8 +47,19 @@ export default function AdminInvitations() {
       setEmail('');
       setIsAdmin(false);
       setCanTeach(false);
+      await loadInvitations();
     } catch {
       setError('招待の作成に失敗しました。');
+    }
+  }
+
+  async function handleRevoke(id: string) {
+    setListError(null);
+    try {
+      await revokeGlobalInvitation(id);
+      await loadInvitations();
+    } catch {
+      setListError('招待の失効に失敗しました。');
     }
   }
 
@@ -72,6 +98,46 @@ export default function AdminInvitations() {
           </p>
         )}
       </div>
+
+      <h2>発行済みの招待</h2>
+      {listError && <p className="error">{listError}</p>}
+      {invitations.length === 0 ? (
+        <p className="empty-state">まだ招待はありません。</p>
+      ) : (
+        <ul className="entry-list">
+          {invitations.map((inv) => {
+            const status = invitationStatus(inv);
+            return (
+              <li
+                key={inv.id}
+                className="entry-list__item"
+                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+              >
+                <div>
+                  <h3>{inv.name}</h3>
+                  <p className="entry-list__meta">{inv.email}</p>
+                  <span className={status === '有効' ? 'badge badge-accent' : 'badge'}>{status}</span>
+                  {inv.canTeach && (
+                    <span className="badge" style={{ marginLeft: 'var(--space-2)' }}>
+                      講師資格
+                    </span>
+                  )}
+                  {inv.isAdmin && (
+                    <span className="badge" style={{ marginLeft: 'var(--space-2)' }}>
+                      管理者
+                    </span>
+                  )}
+                </div>
+                {status === '有効' && (
+                  <button className="btn-danger" onClick={() => handleRevoke(inv.id)}>
+                    失効
+                  </button>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </main>
   );
 }

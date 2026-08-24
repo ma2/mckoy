@@ -25,6 +25,39 @@ export async function getInvitationByTokenHash(db: D1Database, tokenHash: string
   return db.prepare('SELECT * FROM invitations WHERE token_hash = ?').bind(tokenHash).first<InvitationRow>();
 }
 
+/** idから招待を取得する。一覧に無いidを失効させようとしていないか等の確認に使う。 */
+export async function getInvitationById(db: D1Database, id: string): Promise<InvitationRow | null> {
+  return db.prepare('SELECT * FROM invitations WHERE id = ?').bind(id).first<InvitationRow>();
+}
+
+/**
+ * 招待一覧を新しい順に返す。courseId が null なら講座に紐付かない招待
+ * （管理者・講師付与、routes/admin-invitations.ts）、それ以外ならその講座紐付きの
+ * 生徒招待（routes/courses.ts）を返す。パスキー再登録招待（target_user_id付き）は
+ * どちらの一覧にも含めない（生徒招待・管理者招待の管理画面で紛れて表示・誤って
+ * 失効されるのを避けるため）。created_atは秒単位の精度しかないため、同じ秒内に
+ * 複数件作成されても順序が不定にならないようrowidを第2キーにする。
+ */
+export async function listInvitations(db: D1Database, courseId: string | null): Promise<InvitationRow[]> {
+  const query =
+    courseId === null
+      ? db.prepare(
+          'SELECT * FROM invitations WHERE course_id IS NULL AND target_user_id IS NULL ORDER BY created_at DESC, rowid DESC',
+        )
+      : db
+          .prepare(
+            'SELECT * FROM invitations WHERE course_id = ? AND target_user_id IS NULL ORDER BY created_at DESC, rowid DESC',
+          )
+          .bind(courseId);
+  const { results } = await query.all<InvitationRow>();
+  return results;
+}
+
+/** 招待を失効させる（仕様書 §5.4）。物理削除はせず revoked_at を記録するのみ。 */
+export async function revokeInvitation(db: D1Database, id: string): Promise<void> {
+  await db.prepare('UPDATE invitations SET revoked_at = CURRENT_TIMESTAMP WHERE id = ?').bind(id).run();
+}
+
 /** 招待行を新規作成する。トークン生成込みの上位ラッパーは auth/invitation.ts の issueInvitation() を参照。 */
 export async function createInvitation(
   db: D1Database,

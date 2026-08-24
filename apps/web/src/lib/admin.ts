@@ -4,6 +4,23 @@ import { api } from './api';
 export const createGlobalInvitation = (params: { name: string; email: string; isAdmin: boolean; canTeach: boolean }) =>
   api.post<{ invitationUrl: string }>('/admin/invitations', params);
 
+export type GlobalInvitation = {
+  id: string;
+  name: string;
+  email: string;
+  isAdmin: boolean;
+  canTeach: boolean;
+  expiresAt: string;
+  usedAt: string | null;
+  revokedAt: string | null;
+  createdAt: string;
+};
+
+export const listGlobalInvitations = () => api.get<{ invitations: GlobalInvitation[] }>('/admin/invitations');
+
+/** 招待を失効させる（仕様書 §5.4）。 */
+export const revokeGlobalInvitation = (id: string) => api.delete<void>(`/admin/invitations/${id}`);
+
 // 管理者によるユーザー一覧・パスキー手動復旧（仕様書 §7.1）。routes/admin-users.ts に対応する。
 
 export type AdminUser = { id: string; name: string; email: string; isAdmin: boolean; canTeach: boolean };
