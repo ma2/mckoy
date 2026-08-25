@@ -37,3 +37,18 @@ export const deleteUserPasskey = (userId: string, passkeyId: string) =>
 /** 既存ユーザーへのパスキー再登録用招待URLを発行する（仕様書 §7.1 手動復旧フロー手順4）。 */
 export const createPasskeyResetInvitation = (userId: string) =>
   api.post<{ invitationUrl: string }>(`/admin/users/${userId}/passkey-reset-invitation`);
+
+// 管理者による削除済み小説の確認（仕様書 §12）。routes/admin-novels.ts に対応する。
+
+export type DeletedNovel = {
+  id: string;
+  title: string;
+  authorName: string;
+  courseId: string;
+  courseName: string;
+  deletedAt: string;
+  deletedByName: string | null;
+  deletionComment: string | null;
+};
+
+export const listDeletedNovels = () => api.get<{ novels: DeletedNovel[] }>('/admin/novels/deleted');

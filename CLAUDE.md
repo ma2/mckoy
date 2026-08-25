@@ -32,7 +32,9 @@ npm workspaces による monorepo。`apps/api`（Cloudflare Workers + Hono + D1�
   仕様書自体には管理者の削除権限は明記されていない）。visibility判定は
   `routes/novels.ts` の `canViewNovel` に集約（管理者→作者本人→講座membershipの順）。改訂履歴は
   作成・編集のたびに「確定した内容」を1件保存する方式（最新revisionは常に現在の本文と一致）。
-  論理削除された小説は削除者（管理者）以外には作者自身であっても見えない。
+  論理削除された小説は削除者（管理者）以外には作者自身であっても見えない。管理者専用の
+  `GET /api/admin/novels/deleted`（`/admin/deleted-novels`画面）で削除済み小説を著者・講座・
+  削除者・削除コメント付きで一覧できる（仕様書 §12、issue #45）。
 - Phase 4（講師機能）: comments / assignments / announcements。コメントは対象講座の
   active instructor（小説は全て生徒作なので実質「小説と同じ講座の講師」）または管理者のみ投稿可、
   閲覧は小説自体が見えるユーザーとなら誰でも（`canViewNovel`をそのまま再利用）。編集・削除・

@@ -513,7 +513,11 @@ Mckoy にログインしているすべての利用者が閲覧可能。
 
 通常の一覧や検索では `deleted_at IS NULL` の小説のみ表示する。
 
-管理者は必要に応じて削除済み小説を確認できる。
+管理者は必要に応じて削除済み小説を確認できる。管理者専用の一覧画面
+（`GET /api/admin/novels/deleted`）から、削除済みの小説を著者・講座・削除日時・
+削除者・削除コメント付きで確認できる（拡張、issue #45）。個別の小説はIDが分かれば
+`GET /novels/:id` でも管理者権限により閲覧できるが、この一覧が無いとIDを知る手段が
+無く事実上発見できなかった。
 
 ---
 
@@ -823,6 +827,7 @@ GET    /api/admin/users                       # 管理者専用。手動復旧�
 GET    /api/admin/users/:userId/passkeys       # 管理者専用
 DELETE /api/admin/users/:userId/passkeys/:id   # 管理者専用。本人によるセルフサービス削除と異なり最後の1件も失効できる
 POST   /api/admin/users/:userId/passkey-reset-invitation  # 管理者専用。§7.1手順4。既存ユーザーへのパスキー再登録招待を発行
+GET    /api/admin/novels/deleted               # 管理者専用。削除済み小説の一覧（§12）
 
 GET    /api/courses   # 各講座に呼び出しユーザー自身のmembership(role/status、無ければnull)を含める（§9.3）
 POST   /api/courses

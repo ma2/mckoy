@@ -64,6 +64,28 @@ export async function listNovelsByCourse(db: D1Database, courseId: string): Prom
   return results;
 }
 
+export type DeletedNovelRow = NovelRow & { author_name: string; course_name: string; deleted_by_name: string | null };
+
+/**
+ * 論理削除済み（deleted_at IS NOT NULL）の小説一覧を、削除日時の新しい順で返す。
+ * 管理者専用（仕様書 §12「管理者は必要に応じて削除済み小説を確認できる」、issue #45）。
+ * IDが分かっていれば個別閲覧は元々できたが、一覧・発見手段が無かったため追加した。
+ */
+export async function listDeletedNovels(db: D1Database): Promise<DeletedNovelRow[]> {
+  const { results } = await db
+    .prepare(
+      `SELECT n.*, u.name as author_name, c.name as course_name, d.name as deleted_by_name
+       FROM novels n
+       JOIN users u ON u.id = n.author_id
+       JOIN courses c ON c.id = n.course_id
+       LEFT JOIN users d ON d.id = n.deleted_by
+       WHERE n.deleted_at IS NOT NULL
+       ORDER BY n.deleted_at DESC, n.rowid DESC`,
+    )
+    .all<DeletedNovelRow>();
+  return results;
+}
+
 /** title/body/plot/visibility を更新する。改訂履歴(novel_revisions)への保存は呼び出し側の責務。 */
 export async function updateNovel(
   db: D1Database,
