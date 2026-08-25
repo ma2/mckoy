@@ -14,6 +14,7 @@ import {
   revokeCourseInvitation,
   roleLabel,
   statusLabel,
+  courseStatusLabel,
   updateCourse,
   type Course,
   type CourseInvitation,
@@ -147,7 +148,14 @@ export default function CourseDetail() {
       <Breadcrumb
         items={[{ label: 'ホーム', to: '/' }, { label: '講座一覧', to: '/courses' }, { label: course.name }]}
       />
-      <h1>{course.name}</h1>
+      <h1>
+        {course.name}
+        {course.status !== 'open' && (
+          <span className="badge" style={{ marginLeft: 'var(--space-2)', fontWeight: 'normal' }}>
+            {courseStatusLabel[course.status]}
+          </span>
+        )}
+      </h1>
       <p>
         <Link to={`/courses/${id}/novels`}>小説一覧</Link>
         {' ・ '}
@@ -165,7 +173,7 @@ export default function CourseDetail() {
               {roleLabel[myMembership.role]} / {statusLabel[myMembership.status]}
             </span>
           ) : (
-            <button onClick={handleJoin}>参加申請</button>
+            course.status === 'open' && <button onClick={handleJoin}>参加申請</button>
           )}
         </div>
       )}

@@ -16,11 +16,14 @@ export default function NovelList() {
   const [course, setCourse] = useState<Course | null>(null);
   const [novels, setNovels] = useState<NovelSummary[]>([]);
   const [canPost, setCanPost] = useState(false);
+  const [closed, setClosed] = useState(false);
 
   useEffect(() => {
     if (!courseId) return;
     getCourse(courseId).then((result) => setCourse(result.course));
-    listNovels(courseId).then((result) => setNovels(result.novels));
+    listNovels(courseId)
+      .then((result) => setNovels(result.novels))
+      .catch(() => setClosed(true));
     getMyMembership(courseId).then((result) => {
       setCanPost(result.membership?.role === 'student' && result.membership.status === 'active');
     });
@@ -40,7 +43,9 @@ export default function NovelList() {
         <h1>{course ? `${course.name} の小説一覧` : '小説一覧'}</h1>
         {canPost && <Link to={`/courses/${courseId}/novels/new`}>＋ 小説を投稿</Link>}
       </div>
-      {novels.length === 0 ? (
+      {closed ? (
+        <p className="error">この講座はクローズされているため、小説一覧は閲覧できません。</p>
+      ) : novels.length === 0 ? (
         <p className="empty-state">まだ小説が投稿されていません。</p>
       ) : (
         <ul className="entry-list">
