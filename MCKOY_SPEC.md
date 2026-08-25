@@ -318,6 +318,7 @@ discoverable credential を利用し、可能な限りメールアドレスや�
 - id
 - name
 - description
+- status
 - created_by
 - created_at
 - updated_at
@@ -331,8 +332,27 @@ discoverable credential を利用し、可能な限りメールアドレスや�
 - 課題を作成・編集・削除
 - お知らせを作成・編集・削除
 - 生徒の小説へコメント
+- 講座の状態（オープン/クローズ/クローズ・閲覧のみ）を変更
 
 管理者はすべての講座に対して同じ操作を行える。
+
+### 8.1 講座の状態（オープン/クローズ/クローズ・閲覧のみ）
+
+`courses.status` は `open`（オープン）| `closed`（クローズ）| `closed_readonly`
+（クローズ・閲覧のみ）のいずれか。新規作成した講座の初期状態は常に `open`（拡張、
+issue #17）。
+
+- **オープン**: 通常どおり。生徒は小説の閲覧・投稿、課題・お知らせの閲覧、参加申請が
+  すべて可能。
+- **クローズ**: その講座の講師・管理者以外（生徒）からは、講座名とお知らせのみが見える。
+  小説一覧・個別の小説（作者本人であっても）・課題は見えなくなり、新規の参加申請・
+  小説投稿も受け付けない。
+- **クローズ・閲覧のみ**: 講座名・お知らせ・課題・小説の閲覧は引き続き可能。ただし
+  新規の参加申請・小説投稿・生徒による既存小説の編集/削除は受け付けない（閲覧専用）。
+  管理者によるモデレーション目的の削除は状態に関わらず常に可能。
+
+この状態変更は、その講座のactive講師（`canManageCourse`）または管理者のみが行える
+（`PATCH /api/courses/:id` に `status` を含めて送る）。
 
 ---
 
@@ -635,6 +655,7 @@ created_at
 id
 name
 description
+status  # open | closed | closed_readonly（§8.1）。デフォルト open
 created_by
 created_at
 updated_at
@@ -832,7 +853,7 @@ GET    /api/admin/novels/deleted               # 管理者専用。削除済み�
 GET    /api/courses   # 各講座に呼び出しユーザー自身のmembership(role/status、無ければnull)を含める（§9.3）
 POST   /api/courses
 GET    /api/courses/:id
-PATCH  /api/courses/:id
+PATCH  /api/courses/:id   # nameとdescriptionに加え、statusの変更もこのエンドポイントで行う（§8.1）
 
 POST   /api/courses/:id/join
 POST   /api/courses/:id/members/:membershipId/approve

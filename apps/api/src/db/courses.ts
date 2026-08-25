@@ -1,9 +1,12 @@
 // `courses` テーブルへのデータアクセス。
 
+export type CourseStatus = 'open' | 'closed' | 'closed_readonly';
+
 export type CourseRow = {
   id: string;
   name: string;
   description: string | null;
+  status: CourseStatus;
   created_by: string;
   created_at: string;
   updated_at: string;
@@ -30,11 +33,11 @@ export async function listCourses(db: D1Database): Promise<CourseRow[]> {
   return results;
 }
 
-/** name・description を部分更新する（渡されたフィールドのみ更新）。 */
+/** name・description・status を部分更新する（渡されたフィールドのみ更新）。 */
 export async function updateCourse(
   db: D1Database,
   id: string,
-  params: { name?: string; description?: string | null },
+  params: { name?: string; description?: string | null; status?: CourseStatus },
 ): Promise<void> {
   if (params.name !== undefined) {
     await db
@@ -46,6 +49,12 @@ export async function updateCourse(
     await db
       .prepare("UPDATE courses SET description = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
       .bind(params.description, id)
+      .run();
+  }
+  if (params.status !== undefined) {
+    await db
+      .prepare("UPDATE courses SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
+      .bind(params.status, id)
       .run();
   }
 }

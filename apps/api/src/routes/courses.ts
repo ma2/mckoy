@@ -3,7 +3,9 @@ import type { AppEnv } from '../types';
 import { requireSession } from '../auth/session';
 import { issueInvitation } from '../auth/invitation';
 import { getInvitationById, listInvitations, revokeInvitation } from '../db/invitations';
-import { createCourse, getCourseById, listCourses, updateCourse } from '../db/courses';
+import { createCourse, getCourseById, listCourses, updateCourse, type CourseStatus } from '../db/courses';
+
+const COURSE_STATUSES: CourseStatus[] = ['open', 'closed', 'closed_readonly'];
 import {
   createMembership,
   getMembershipByCourseAndUser,
@@ -63,6 +65,7 @@ coursesRoute.get('/', async (c) => {
         id: course.id,
         name: course.name,
         description: course.description,
+        status: course.status,
         createdBy: course.created_by,
         createdAt: course.created_at,
         myMembership: membership ? { role: membership.role, status: membership.status } : null,
@@ -115,13 +118,18 @@ coursesRoute.get('/:id', async (c) => {
       id: course.id,
       name: course.name,
       description: course.description,
+      status: course.status,
       createdBy: course.created_by,
       createdAt: course.created_at,
     },
   });
 });
 
-/** 講座のname/descriptionを更新する。canManageCourseで許可された講師/管理者のみ。 */
+/**
+ * 講座のname/description/statusを更新する。canManageCourseで許可された講師/管理者のみ。
+ * status（オープン/クローズ/クローズ・閲覧のみ）は講師が生徒への公開範囲を制御する
+ * ための設定（issue #17）。
+ */
 coursesRoute.patch('/:id', async (c) => {
   const user = c.get('user');
   const courseId = c.req.param('id');
@@ -131,7 +139,10 @@ coursesRoute.patch('/:id', async (c) => {
     return c.json({ error: 'forbidden' }, 403);
   }
 
-  const body = await c.req.json<{ name?: string; description?: string | null }>();
+  const body = await c.req.json<{ name?: string; description?: string | null; status?: CourseStatus }>();
+  if (body.status !== undefined && !COURSE_STATUSES.includes(body.status)) {
+    return c.json({ error: 'invalid_status' }, 400);
+  }
   try {
     await updateCourse(c.env.DB, courseId, body);
   } catch (err) {
@@ -171,6 +182,8 @@ coursesRoute.get('/:id/members', async (c) => {
  * （自己申告で講師になることはできない）。pending membershipを作成し、
  * 講師の承認を待つ。既にmembershipがあれば（pending/active/rejectedいずれでも）再申請不可。
  * 管理者はどの講座にも既に全権限でアクセスできるため参加申請自体ができない（issue #37）。
+ * 講座がオープン以外（クローズ/クローズ・閲覧のみ）の場合、新規の参加申請は受け付けない
+ * （issue #17）。
  */
 coursesRoute.post('/:id/join', async (c) => {
   const user = c.get('user');
@@ -178,6 +191,7 @@ coursesRoute.post('/:id/join', async (c) => {
   const courseId = c.req.param('id');
   const course = await getCourseById(c.env.DB, courseId);
   if (!course) return c.json({ error: 'not_found' }, 404);
+  if (course.status !== 'open') return c.json({ error: 'course_not_open' }, 403);
 
   const existing = await getMembershipByCourseAndUser(c.env.DB, courseId, user.id);
   if (existing) return c.json({ error: 'already_requested' }, 409);
@@ -288,15 +302,25 @@ coursesRoute.get('/:id/membership', async (c) => {
   return c.json({ membership: membership ? { role: membership.role, status: membership.status } : null });
 });
 
-/** 講座内の小説一覧。呼び出しユーザーが見えるもの（visibilityに応じて）だけをフィルタして返す。 */
+/**
+ * 講座内の小説一覧。呼び出しユーザーが見えるもの（visibilityに応じて）だけをフィルタして返す。
+ * 講座がクローズ状態（status='closed'）の場合、その講座の講師・管理者以外（生徒）には
+ * 一覧そのものを見せない（講座名とお知らせのみ見える、仕様書 §8、issue #17）。
+ * クローズ・閲覧のみ（closed_readonly）は通常どおり閲覧できる。
+ */
 coursesRoute.get('/:id/novels', async (c) => {
   const user = c.get('user');
   const courseId = c.req.param('id');
   const course = await getCourseById(c.env.DB, courseId);
   if (!course) return c.json({ error: 'not_found' }, 404);
 
-  const novels = await listNovelsByCourse(c.env.DB, courseId);
   const membership = user.isAdmin ? null : await getMembershipByCourseAndUser(c.env.DB, courseId, user.id);
+  const isManager = user.isAdmin || (membership?.role === 'instructor' && membership.status === 'active');
+  if (course.status === 'closed' && !isManager) {
+    return c.json({ error: 'course_closed' }, 403);
+  }
+
+  const novels = await listNovelsByCourse(c.env.DB, courseId);
 
   // routes/novels.ts の canViewNovel() と同じロジックだが、小説1件ごとにDBへ
   // 問い合わせるのではなく、呼び出しユーザーのmembershipを1回だけ取得して使い回す。
@@ -324,12 +348,17 @@ coursesRoute.get('/:id/novels', async (c) => {
   });
 });
 
-/** 小説を投稿する。対象講座のactiveな生徒membershipが必須（管理者・講師には投稿権限を与えない、仕様書 §17）。 */
+/**
+ * 小説を投稿する。対象講座のactiveな生徒membershipが必須（管理者・講師には投稿権限を
+ * 与えない、仕様書 §17）。講座がオープン以外（クローズ/クローズ・閲覧のみ）の場合は
+ * 新規投稿を受け付けない（issue #17）。
+ */
 coursesRoute.post('/:id/novels', async (c) => {
   const user = c.get('user');
   const courseId = c.req.param('id');
   const course = await getCourseById(c.env.DB, courseId);
   if (!course) return c.json({ error: 'not_found' }, 404);
+  if (course.status !== 'open') return c.json({ error: 'course_not_open' }, 403);
 
   const membership = await getMembershipByCourseAndUser(c.env.DB, courseId, user.id);
   if (!membership || membership.role !== 'student' || membership.status !== 'active') {
@@ -391,12 +420,20 @@ coursesRoute.post('/:id/novels', async (c) => {
   );
 });
 
-/** 講座内の課題一覧。閲覧はactive membership（役割問わず）または管理者のみ。 */
+/**
+ * 講座内の課題一覧。閲覧はactive membership（役割問わず）または管理者のみ。講座が
+ * クローズ状態の場合、その講座の講師・管理者以外（生徒）には見せない（課題は
+ * クローズ・閲覧のみでは引き続き見える、issue #17）。
+ */
 coursesRoute.get('/:id/assignments', async (c) => {
   const user = c.get('user');
   const courseId = c.req.param('id');
   if (!(await hasActiveMembership(c.env.DB, user, courseId))) {
     return c.json({ error: 'forbidden' }, 403);
+  }
+  const course = await getCourseById(c.env.DB, courseId);
+  if (course?.status === 'closed' && !(await canManageCourse(c.env.DB, user, courseId))) {
+    return c.json({ error: 'course_closed' }, 403);
   }
   const assignments = await listAssignmentsByCourse(c.env.DB, courseId);
   return c.json({

@@ -4,11 +4,13 @@ import { api } from './api';
 
 export type MembershipRole = 'instructor' | 'student';
 export type MembershipStatus = 'pending' | 'active' | 'rejected';
+export type CourseStatus = 'open' | 'closed' | 'closed_readonly';
 
 export type Course = {
   id: string;
   name: string;
   description: string | null;
+  status: CourseStatus;
   createdBy: string;
   createdAt: string;
   /** 呼び出しユーザー自身のこの講座でのmembership（無ければnull）。一覧での参加申請ボタン出し分けに使う。 */
@@ -32,6 +34,12 @@ export const statusLabel: Record<MembershipStatus, string> = {
   rejected: '拒否済み',
 };
 
+export const courseStatusLabel: Record<CourseStatus, string> = {
+  open: 'オープン',
+  closed: 'クローズ',
+  closed_readonly: 'クローズ・閲覧のみ',
+};
+
 export const listCourses = () => api.get<{ courses: Course[] }>('/courses');
 
 export const getCourse = (id: string) => api.get<{ course: Course }>(`/courses/${id}`);
@@ -39,8 +47,10 @@ export const getCourse = (id: string) => api.get<{ course: Course }>(`/courses/$
 export const createCourse = (params: { name: string; description: string | null }) =>
   api.post<{ course: Course }>('/courses', params);
 
-export const updateCourse = (id: string, params: { name?: string; description?: string | null }) =>
-  api.patch<{ course: Course }>(`/courses/${id}`, params);
+export const updateCourse = (
+  id: string,
+  params: { name?: string; description?: string | null; status?: CourseStatus },
+) => api.patch<{ course: Course }>(`/courses/${id}`, params);
 
 export const joinCourse = (id: string) => api.post<void>(`/courses/${id}/join`);
 

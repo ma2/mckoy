@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import type { AppEnv } from '../types';
 import { getUserById, type User } from '../db/users';
 import { requireSession } from '../auth/session';
+import { getCourseById } from '../db/courses';
 import { getNovelById, updateNovel, softDeleteNovel, type NovelRow, type NovelVisibility } from '../db/novels';
 import { createRevision, listRevisionsByNovel } from '../db/novel_revisions';
 import { findOrCreateTagIds, setNovelTags, listTagsByNovel } from '../db/tags';
@@ -20,12 +21,23 @@ novelsRoute.use('*', requireSession);
  * 必須（pendingでは不可）。作者本人と管理者は常に閲覧可。論理削除された小説は
  * ここでは判定しない — deleted_atのチェックは呼び出し側で別途行い、作者本人であっても
  * 404にできるようにする（仕様書 §12）。
+ *
+ * 講座がクローズ状態（status='closed'）の場合、その講座の講師・管理者以外には
+ * （作者本人であっても）一切見せない — 生徒からは講座名とお知らせのみが見える
+ * 状態にするため（issue #17）。クローズ・閲覧のみ（closed_readonly）はこの制限を
+ * 受けず、通常どおりvisibilityに従って判定する。
  */
 export async function canViewNovel(db: D1Database, user: User, novel: NovelRow): Promise<boolean> {
   if (user.isAdmin) return true;
+  const membership = await getMembershipByCourseAndUser(db, novel.course_id, user.id);
+  const isActiveInstructorOfCourse = membership?.status === 'active' && membership.role === 'instructor';
+  if (isActiveInstructorOfCourse) return true;
+
+  const course = await getCourseById(db, novel.course_id);
+  if (course?.status === 'closed') return false;
+
   if (novel.author_id === user.id) return true;
   if (novel.visibility === 'all_users') return true;
-  const membership = await getMembershipByCourseAndUser(db, novel.course_id, user.id);
   if (!membership || membership.status !== 'active') return false;
   if (novel.visibility === 'course_students') return true;
   return novel.visibility === 'instructors' && membership.role === 'instructor';
@@ -70,12 +82,19 @@ novelsRoute.get('/:id', async (c) => {
   return c.json({ novel: await serializeNovel(c.env.DB, novel) });
 });
 
-/** 小説を編集する。作者本人のみ（管理者にも編集権限は与えない、ユーザーとの合意事項）。編集の度にrevisionを1件残す。 */
+/**
+ * 小説を編集する。作者本人のみ（管理者にも編集権限は与えない、ユーザーとの合意事項）。
+ * 編集の度にrevisionを1件残す。講座がオープン以外（クローズ/クローズ・閲覧のみ）の
+ * 場合は編集できない（クローズは閲覧自体がloadVisibleNovelで404になるため実質
+ * クローズ・閲覧のみのケースのガード、issue #17）。
+ */
 novelsRoute.patch('/:id', async (c) => {
   const user = c.get('user');
   const novel = await loadVisibleNovel(c.env.DB, user, c.req.param('id'));
   if (!novel) return c.json({ error: 'not_found' }, 404);
   if (novel.author_id !== user.id) return c.json({ error: 'forbidden' }, 403);
+  const course = await getCourseById(c.env.DB, novel.course_id);
+  if (course && course.status !== 'open') return c.json({ error: 'course_not_open' }, 403);
 
   const body = await c.req.json<{
     title?: string;
@@ -109,12 +128,20 @@ novelsRoute.patch('/:id', async (c) => {
   return c.json({ novel: await serializeNovel(c.env.DB, updated!) });
 });
 
-/** 小説を論理削除する。作者本人 または 管理者（モデレーション目的、ユーザーと相談の上で追加した権限）。 */
+/**
+ * 小説を論理削除する。作者本人 または 管理者（モデレーション目的、ユーザーと相談の上で
+ * 追加した権限）。作者本人による削除は、講座がオープン以外の場合はできない
+ * （issue #17）。管理者による削除は講座の状態に関わらず常に可能。
+ */
 novelsRoute.delete('/:id', async (c) => {
   const user = c.get('user');
   const novel = await loadVisibleNovel(c.env.DB, user, c.req.param('id'));
   if (!novel) return c.json({ error: 'not_found' }, 404);
   if (novel.author_id !== user.id && !user.isAdmin) return c.json({ error: 'forbidden' }, 403);
+  if (novel.author_id === user.id && !user.isAdmin) {
+    const course = await getCourseById(c.env.DB, novel.course_id);
+    if (course && course.status !== 'open') return c.json({ error: 'course_not_open' }, 403);
+  }
 
   const body = await c.req.json<{ comment?: string }>().catch(() => ({}) as { comment?: string });
   await softDeleteNovel(c.env.DB, novel.id, { deletedBy: user.id, deletionComment: body.comment ?? null });

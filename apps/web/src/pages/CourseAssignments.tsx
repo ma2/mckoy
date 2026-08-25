@@ -16,6 +16,7 @@ export default function CourseAssignments() {
   const [body, setBody] = useState('');
   const [dueAt, setDueAt] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [closed, setClosed] = useState(false);
 
   const currentUser = state.status === 'authenticated' ? state.user : null;
 
@@ -23,8 +24,13 @@ export default function CourseAssignments() {
     if (!courseId) return;
     const { course } = await getCourse(courseId);
     setCourse(course);
-    const { assignments } = await listAssignments(courseId);
-    setAssignments(assignments);
+    try {
+      const { assignments } = await listAssignments(courseId);
+      setAssignments(assignments);
+      setClosed(false);
+    } catch {
+      setClosed(true);
+    }
     const { membership } = await getMyMembership(courseId);
     setCanManage(
       currentUser?.isAdmin === true || (membership?.role === 'instructor' && membership.status === 'active'),
@@ -62,7 +68,9 @@ export default function CourseAssignments() {
       />
       <h1>課題</h1>
       {error && <p className="error">{error}</p>}
-      {assignments.length === 0 ? (
+      {closed ? (
+        <p className="error">この講座はクローズされているため、課題は閲覧できません。</p>
+      ) : assignments.length === 0 ? (
         <p className="empty-state">まだ課題はありません。</p>
       ) : (
         <ul className="entry-list">

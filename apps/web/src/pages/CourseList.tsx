@@ -2,7 +2,18 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Breadcrumb from '../components/Breadcrumb';
 import { useAuth } from '../lib/auth';
-import { listCourses, joinCourse, roleLabel, statusLabel, type Course } from '../lib/courses';
+import {
+  listCourses,
+  joinCourse,
+  updateCourse,
+  roleLabel,
+  statusLabel,
+  courseStatusLabel,
+  type Course,
+  type CourseStatus,
+} from '../lib/courses';
+
+const COURSE_STATUSES: CourseStatus[] = ['open', 'closed', 'closed_readonly'];
 
 /** 講座一覧画面。誰でも閲覧・参加申請できる。「新しい講座を作成」は管理者/can_teachのみ表示（実際の可否はサーバー側判定）。 */
 export default function CourseList() {
@@ -30,6 +41,16 @@ export default function CourseList() {
     }
   }
 
+  async function handleStatusChange(courseId: string, status: CourseStatus) {
+    setMessage(null);
+    try {
+      await updateCourse(courseId, { status });
+      await load();
+    } catch {
+      setMessage('講座の状態変更に失敗しました。');
+    }
+  }
+
   const isAdmin = state.status === 'authenticated' && state.user.isAdmin;
   const isTeacherOnly = state.status === 'authenticated' && state.user.canTeach && !state.user.isAdmin;
   const canCreate = state.status === 'authenticated' && (state.user.isAdmin || state.user.canTeach);
@@ -53,31 +74,54 @@ export default function CourseList() {
         <p className="empty-state">まだ講座がありません。</p>
       ) : (
         <ul className="entry-list">
-          {visibleCourses.map((course) => (
-            <li
-              key={course.id}
-              className="entry-list__item"
-              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-            >
-              <div>
-                <h3>
-                  <Link to={`/courses/${course.id}`}>{course.name}</Link>
-                </h3>
-                {course.description && <p className="entry-list__meta">{course.description}</p>}
-              </div>
-              {course.myMembership ? (
-                <span className="badge">
-                  {roleLabel[course.myMembership.role]} / {statusLabel[course.myMembership.status]}
-                </span>
-              ) : (
-                !isAdmin && (
-                  <button className="btn-secondary" onClick={() => handleJoin(course.id)}>
-                    参加申請
-                  </button>
-                )
-              )}
-            </li>
-          ))}
+          {visibleCourses.map((course) => {
+            const canManageThis =
+              isAdmin || (course.myMembership?.role === 'instructor' && course.myMembership?.status === 'active');
+            return (
+              <li key={course.id} className="entry-list__item">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <h3>
+                      <Link to={`/courses/${course.id}`}>{course.name}</Link>
+                      {course.status !== 'open' && (
+                        <span className="badge" style={{ marginLeft: 'var(--space-2)', fontWeight: 'normal' }}>
+                          {courseStatusLabel[course.status]}
+                        </span>
+                      )}
+                    </h3>
+                    {course.description && <p className="entry-list__meta">{course.description}</p>}
+                  </div>
+                  {course.myMembership ? (
+                    <span className="badge">
+                      {roleLabel[course.myMembership.role]} / {statusLabel[course.myMembership.status]}
+                    </span>
+                  ) : (
+                    !isAdmin &&
+                    course.status === 'open' && (
+                      <button className="btn-secondary" onClick={() => handleJoin(course.id)}>
+                        参加申請
+                      </button>
+                    )
+                  )}
+                </div>
+                {canManageThis && (
+                  <div style={{ marginTop: 'var(--space-3)', display: 'flex', gap: 'var(--space-2)', alignItems: 'center' }}>
+                    <span className="entry-list__meta">講座の状態:</span>
+                    {COURSE_STATUSES.map((status) => (
+                      <button
+                        key={status}
+                        className="btn-secondary"
+                        disabled={course.status === status}
+                        onClick={() => handleStatusChange(course.id, status)}
+                      >
+                        {courseStatusLabel[status]}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </li>
+            );
+          })}
         </ul>
       )}
     </main>
