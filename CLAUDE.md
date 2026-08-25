@@ -123,6 +123,10 @@ Playwright + 仮想パスキー認証器、検証後は `.wrangler/state` ごと
 その文字列に一致する行だけを削除する（全テーブルの一括DELETEはしない。ステージングDBには
 将来ユーザー自身のデータ等が入る可能性があるため。本番環境には言うまでもなく実行しない）。
 
+本番D1は `.github/workflows/d1-backup.yml`（GitHub Actions、毎日UTC 18:00 = JST 03:00 と
+`workflow_dispatch`）が自動でSQLダンプにエクスポートし、GitHub Actions artifact（保持期間
+90日）として保存する（仕様書 §19、issue #44）。復元手順は仕様書 §19.2 を参照。
+
 ## Mckoy とは
 
 Mckoy は、小説創作講座向けの招待制・会員制小説投稿・管理システムであり、想定利用者は約100人（生徒・講師・管理者）。

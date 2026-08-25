@@ -901,6 +901,38 @@ POST   /api/invitations/:token/register
 
 初版では自動復元UIまでは不要。
 
+### 19.1 実装（GitHub Actions）
+
+`.github/workflows/d1-backup.yml` が、本番D1（`mckoy_db`）を毎日1回（UTC 18:00 = JST 03:00）
+`wrangler d1 export --env production --remote` でSQLダンプにエクスポートし、GitHub Actions
+artifact（保持期間90日）としてアップロードする。GitHub側のストレージのため、Cloudflare
+アカウント自体に問題が起きた場合でも復旧可能（仕様書冒頭の要件）。`workflow_dispatch` にも
+対応しており、Actionsタブから手動実行もできる。
+
+ダンプにはユーザーの氏名・メールアドレス等のPIIが含まれるが、暗号化はしていない（private
+repoのActions artifactであり、リポジトリ自体と同等の信頼境界として扱う）。
+
+実行にはリポジトリの Secrets（Settings → Secrets and variables → Actions）に以下を設定する
+必要がある：
+
+- `CLOUDFLARE_API_TOKEN`: Cloudflareダッシュボードで発行する、対象アカウントに対する
+  `D1 Edit` 権限を持つAPIトークン（GitHub Actions専用に新規発行し、`wrangler login` の
+  OAuthトークンとは別にする）
+- `CLOUDFLARE_ACCOUNT_ID`: 対象のCloudflareアカウントID（`wrangler whoami` で確認できる）
+
+### 19.2 復元手順
+
+1. GitHub の Actions タブから対象の `D1 バックアップ` 実行を選び、artifact
+   （`mckoy-db-backup-<run_id>`）をダウンロードして展開する（`mckoy-db-backup.sql`）。
+2. 復元先（通常は本番の一時的な障害対応用に別のD1データベースを作成してそこに復元し、
+   内容を確認してから本番に反映する）に対して実行する：
+   ```bash
+   npx wrangler d1 execute mckoy_db --env production --remote --file=mckoy-db-backup.sql
+   ```
+   本番D1に直接流し込む場合は、既存データと衝突する可能性があるため、事前に対象テーブルを
+   確認し、必要に応じて別データベースへの復元→データ突合という手順を踏むこと（自動復元UI・
+   自動突合ツールは初版では実装しない）。
+
 ---
 
 ## 20. セキュリティ要件
