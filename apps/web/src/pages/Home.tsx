@@ -31,14 +31,14 @@ export default function Home() {
         </li>
         {user.isAdmin && (
           <li className="entry-list__item">
-            <Link to="/admin/invitations">招待管理</Link>
-            <p className="entry-list__meta">講座に紐付かない招待（管理者・講師資格の付与）を発行・管理します。</p>
+            <Link to="/admin/deleted-novels">削除済み小説</Link>
+            <p className="entry-list__meta">論理削除された小説を確認します。</p>
           </li>
         )}
         {user.isAdmin && (
           <li className="entry-list__item">
-            <Link to="/admin/deleted-novels">削除済み小説</Link>
-            <p className="entry-list__meta">論理削除された小説を確認します。</p>
+            <Link to="/admin/invitations">招待管理</Link>
+            <p className="entry-list__meta">講座に紐付かない招待（管理者・講師資格の付与）を発行・管理します。</p>
           </li>
         )}
         <li className="entry-list__item">
