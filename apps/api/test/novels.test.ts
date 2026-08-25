@@ -208,6 +208,19 @@ describe('course novel listing includes the author name (issue #10)', () => {
   });
 });
 
+describe('novel detail includes the author name (issue #57)', () => {
+  it('reports the posting student\'s name on GET /novels/:id', async () => {
+    const app = buildApp();
+    const { courseId, student } = await seedCourseWithStudent();
+    const studentCookie = await loginAs(app, student.id);
+    const novelId = await postNovel(app, studentCookie, courseId, { title: 'Original title' });
+
+    const res = await app.request(`/novels/${novelId}`, { headers: { cookie: studentCookie } }, env);
+    const { novel } = await res.json<{ novel: { authorName: string } }>();
+    expect(novel.authorName).toBe('Test User');
+  });
+});
+
 describe('edit and delete authorization', () => {
   it('rejects an edit from someone other than the author', async () => {
     const app = buildApp();

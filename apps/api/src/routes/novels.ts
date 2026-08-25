@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import type { AppEnv } from '../types';
-import type { User } from '../db/users';
+import { getUserById, type User } from '../db/users';
 import { requireSession } from '../auth/session';
 import { getNovelById, updateNovel, softDeleteNovel, type NovelRow, type NovelVisibility } from '../db/novels';
 import { createRevision, listRevisionsByNovel } from '../db/novel_revisions';
@@ -40,11 +40,16 @@ async function loadVisibleNovel(db: D1Database, user: User, id: string): Promise
   return novel;
 }
 
-/** DBの行をAPIレスポンス形式（camelCase、タグ配列付き）に変換する。 */
+/**
+ * DBの行をAPIレスポンス形式（camelCase、タグ配列付き）に変換する。作者の氏名も含める
+ * （自分以外の小説を見る際に著者名を表示するため、issue #57）。
+ */
 async function serializeNovel(db: D1Database, novel: NovelRow) {
+  const author = await getUserById(db, novel.author_id);
   return {
     id: novel.id,
     authorId: novel.author_id,
+    authorName: author?.name ?? '',
     courseId: novel.course_id,
     title: novel.title,
     body: novel.body,

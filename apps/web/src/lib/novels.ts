@@ -18,6 +18,7 @@ export type NovelSummary = {
 export type Novel = {
   id: string;
   authorId: string;
+  authorName: string;
   courseId: string;
   title: string;
   body: string;

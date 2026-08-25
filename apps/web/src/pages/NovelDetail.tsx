@@ -147,7 +147,14 @@ export default function NovelDetail() {
           { label: novel.title },
         ]}
       />
-      <h1>{novel.title}</h1>
+      <h1>
+        {novel.title}
+        {!isAuthor && (
+          <span className="entry-list__meta" style={{ fontWeight: 'normal', marginLeft: 'var(--space-3)' }}>
+            {novel.authorName}
+          </span>
+        )}
+      </h1>
       <div style={{ marginBottom: 'var(--space-4)' }}>
         <span className="badge" style={{ marginRight: 'var(--space-2)' }}>
           {visibilityLabel[novel.visibility]}
