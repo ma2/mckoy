@@ -106,9 +106,11 @@ export default function Passkeys() {
                 <h3>{p.name ?? '(名前未設定)'}</h3>
                 <p className="entry-list__meta">登録日: {p.createdAt}</p>
               </div>
-              <button className="btn-danger" onClick={() => handleDelete(p.id)}>
-                削除
-              </button>
+              {passkeys.length > 1 && (
+                <button className="btn-danger" onClick={() => handleDelete(p.id)}>
+                  削除
+                </button>
+              )}
             </li>
           ))}
         </ul>
