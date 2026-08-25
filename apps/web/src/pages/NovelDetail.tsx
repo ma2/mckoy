@@ -14,8 +14,10 @@ const visibilityLabel: Record<string, string> = {
 
 /**
  * 小説詳細画面。作者本人だけが本文の編集フォームを見る（他人には本文をそのまま表示）。
- * 削除ボタンは作者本人または管理者。コメント投稿フォームは対象講座のactive講師/管理者のみ。
- * 改訂履歴・コメントは常に画面下部に表示する（別ルートは作らず1画面にまとめている）。
+ * ただし講座がクローズ・閲覧のみの場合は作者本人でも編集不可のため、他人が見るのと同じ
+ * 表示（フォーム無し・改訂履歴も非表示）にする。
+ * 削除ボタンは作者本人（編集可能な場合のみ）または管理者。コメント投稿フォームは対象講座の
+ * active講師/管理者のみ。コメントは常に画面下部に表示する（別ルートは作らず1画面にまとめている）。
  */
 export default function NovelDetail() {
   const { id } = useParams<{ id: string }>();
@@ -82,7 +84,12 @@ export default function NovelDetail() {
 
   const currentUser = state.status === 'authenticated' ? state.user : null;
   const isAuthor = novel !== null && currentUser !== null && novel.authorId === currentUser.id;
-  const canDelete = isAuthor || (currentUser?.isAdmin ?? false);
+  // 講座がクローズ・閲覧のみの場合、作者本人でも編集・削除はできない（閲覧のみ可能な講座で
+  // クローズされている場合は canViewNovel の時点で404になるため、ここに来るのは実質
+  // closed_readonly のケースのみ）。
+  const authorWriteBlocked = isAuthor && course !== null && course.status !== 'open';
+  const canEdit = isAuthor && !authorWriteBlocked;
+  const canDelete = canEdit || (currentUser?.isAdmin ?? false);
 
   async function handleUpdate(e: React.FormEvent) {
     e.preventDefault();
@@ -173,7 +180,7 @@ export default function NovelDetail() {
       )}
       {error && <p className="error">{error}</p>}
 
-      {!isAuthor && (
+      {(!isAuthor || authorWriteBlocked) && (
         <>
           {novel.plot && (
             <div className="card">
@@ -187,7 +194,7 @@ export default function NovelDetail() {
         </>
       )}
 
-      {isAuthor && (
+      {canEdit && (
         <div className="card">
           <form onSubmit={handleUpdate}>
             <label className="field">
@@ -235,19 +242,23 @@ export default function NovelDetail() {
         </div>
       )}
 
-      <h2>改訂履歴</h2>
-      {revisions.length === 0 ? (
-        <p className="empty-state">改訂履歴はありません。</p>
-      ) : (
-        <ul className="entry-list">
-          {revisions.map((r) => (
-            <li key={r.id} className="entry-list__item">
-              <p className="entry-list__meta">{r.createdAt}</p>
-              <h3>{r.title}</h3>
-              {r.revisionComment && <p>{r.revisionComment}</p>}
-            </li>
-          ))}
-        </ul>
+      {!authorWriteBlocked && (
+        <>
+          <h2>改訂履歴</h2>
+          {revisions.length === 0 ? (
+            <p className="empty-state">改訂履歴はありません。</p>
+          ) : (
+            <ul className="entry-list">
+              {revisions.map((r) => (
+                <li key={r.id} className="entry-list__item">
+                  <p className="entry-list__meta">{r.createdAt}</p>
+                  <h3>{r.title}</h3>
+                  {r.revisionComment && <p>{r.revisionComment}</p>}
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
       )}
 
       <h2>コメント</h2>
