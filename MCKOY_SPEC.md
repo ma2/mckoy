@@ -922,8 +922,22 @@ repoのActions artifactであり、リポジトリ自体と同等の信頼境界
 
 ### 19.2 復元手順
 
-1. GitHub の Actions タブから対象の `D1 バックアップ` 実行を選び、artifact
-   （`mckoy-db-backup-<run_id>`）をダウンロードして展開する（`mckoy-db-backup.sql`）。
+1. artifact（`mckoy-db-backup-<run_id>`）をダウンロードする。以下のいずれかの方法による。
+
+   - **GitHubのWeb画面から**: `https://github.com/ma2/mckoy/actions/workflows/d1-backup.yml`
+     を開き、対象の実行を選ぶ。実行詳細画面下部の「Artifacts」セクションから
+     `mckoy-db-backup-<run_id>` をクリックするとzipがダウンロードされる（展開すると
+     `mckoy-db-backup.sql` が得られる）。
+   - **`gh` CLIから**:
+     ```bash
+     # 直近の実行一覧からrun idを確認
+     gh run list --repo ma2/mckoy --workflow="D1 バックアップ" --limit 5
+     # そのrun idのartifactを指定ディレクトリにダウンロード
+     gh run download <run_id> --repo ma2/mckoy -D ./backup-download
+     ```
+     （1実行につきartifactは1個のみのため `-n` での絞り込みは不要。
+     `./backup-download/mckoy-db-backup.sql` に保存される。）
+
 2. 復元先（通常は本番の一時的な障害対応用に別のD1データベースを作成してそこに復元し、
    内容を確認してから本番に反映する）に対して実行する：
    ```bash
