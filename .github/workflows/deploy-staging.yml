@@ -1,0 +1,54 @@
+name: ステージングデプロイ
+
+# dev → master の PR を作成・更新したタイミングで、その内容をステージング環境
+# （wrangler.toml の [env.staging]、仕様書 §3「デプロイ環境」）へ毎回デプロイする。
+# ユーザーがマージ前に実際の画面で確認できるようにするための運用（CLAUDE.md
+# 「開発ワークフロー」）。手動で流したい場合は workflow_dispatch を使う。
+#
+# 必要なリポジトリ secret（d1-backup.yml と共用）:
+#   CLOUDFLARE_API_TOKEN  … Workers Scripts:Edit / D1:Edit / Account Settings:Read を含むこと
+#   CLOUDFLARE_ACCOUNT_ID
+
+on:
+  pull_request:
+    branches: [master]
+    types: [opened, synchronize, reopened]
+  workflow_dispatch: {}
+
+# 同一PRへの連続 push では最新のコミットだけデプロイすれば十分なので、
+# 進行中の実行はキャンセルする。
+concurrency:
+  group: deploy-staging-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: 依存関係インストール
+        run: npm ci
+
+      - name: Web をビルド
+        run: npm run build --workspace apps/web
+
+      - name: staging の D1 に migration を適用
+        working-directory: apps/api
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        # CI（非対話環境）では確認プロンプトは自動でスキップされる。
+        # `d1 migrations apply` は `-y` を受け付けない点に注意（`d1 export` とは異なる）。
+        run: npx wrangler d1 migrations apply mckoy_db_staging --env staging --remote
+
+      - name: staging へデプロイ
+        working-directory: apps/api
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx wrangler deploy --env staging

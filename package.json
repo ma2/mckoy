@@ -10,6 +10,7 @@
     "dev:web": "npm run dev --workspace apps/web",
     "test:api": "npm test --workspace apps/api",
     "migrate:local": "npm run migrate:local --workspace apps/api",
-    "seed:admin": "npm run seed:admin --workspace apps/api"
+    "seed:admin": "npm run seed:admin --workspace apps/api",
+    "revoke:admin": "npm run revoke:admin --workspace apps/api"
   }
 }

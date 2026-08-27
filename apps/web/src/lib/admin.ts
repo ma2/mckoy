@@ -28,6 +28,14 @@ export type AdminPasskey = { id: string; name: string | null; createdAt: string;
 
 export const listUsers = () => api.get<{ users: AdminUser[] }>('/admin/users');
 
+/**
+ * 既存ユーザーの権限フラグを更新する（issue #43）。can_teach は付与・はく奪どちらも
+ * 可能。is_admin は付与のみで、はく奪（false）はサーバー側で拒否される
+ * （管理者権限のはく奪は運用スクリプト `npm run revoke:admin` でのみ行う）。
+ */
+export const updateUser = (userId: string, params: { isAdmin?: boolean; canTeach?: boolean }) =>
+  api.patch<{ user: AdminUser }>(`/admin/users/${userId}`, params);
+
 export const listUserPasskeys = (userId: string) =>
   api.get<{ passkeys: AdminPasskey[] }>(`/admin/users/${userId}/passkeys`);
 

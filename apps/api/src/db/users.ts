@@ -64,3 +64,28 @@ export async function createUser(
   if (!user) throw new Error('failed to create user');
   return user;
 }
+
+/**
+ * 既存ユーザーの権限フラグ（is_admin / can_teach）を更新する。issue #43 の
+ * 管理者向けユーザー編集画面（仕様書 §22「講師資格管理」「管理者権限管理」）で使う。
+ * 「管理者権限のはく奪（isAdmin: false）はWeb経由では許可しない」という方針の判定は
+ * 呼び出し側（routes/admin-users.ts）で行い、ここは渡されたフラグをそのまま反映する。
+ */
+export async function updateUser(
+  db: D1Database,
+  id: string,
+  params: { isAdmin?: boolean; canTeach?: boolean },
+): Promise<void> {
+  if (params.isAdmin !== undefined) {
+    await db
+      .prepare('UPDATE users SET is_admin = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
+      .bind(params.isAdmin ? 1 : 0, id)
+      .run();
+  }
+  if (params.canTeach !== undefined) {
+    await db
+      .prepare('UPDATE users SET can_teach = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
+      .bind(params.canTeach ? 1 : 0, id)
+      .run();
+  }
+}

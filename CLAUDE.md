@@ -21,6 +21,12 @@ npm workspaces による monorepo。`apps/api`（Cloudflare Workers + Hono + D1�
   （`revoked_at`記録のみ、物理削除しない）でき、`GET`/`DELETE /api/admin/invitations/:id`
   で講座に紐付かない招待（管理者専用）、`GET`/`DELETE /api/courses/:id/invitations/:id`で
   講座紐付きの生徒招待（`canManageCourse`）をそれぞれ一覧・失効できる（仕様書 §5.4、issue #42）。
+  既存ユーザーの講師資格・管理者権限の後付け変更は `PATCH /api/admin/users/:userId`
+  （`/admin/users` 画面、仕様書 §22、issue #43）。`can_teach` は付与・はく奪の両方可、
+  `is_admin` は付与のみ可で、はく奪（`isAdmin: false`）は常に 400 で拒否する
+  （悪意ある管理者による乗っ取り防止）。管理者権限のはく奪は運用スクリプト
+  `npm run revoke:admin -- --email=...`（`apps/api/scripts/revoke-admin.mjs`、
+  seed:admin と対、最後の1人の管理者は保護）でのみ行う。
 - Phase 2（講座）: courses / course_memberships、講座作成（作成者は同時にactive instructor
   membershipを得る）、講座編集、`/api/courses/:id/invitations`（講座紐付きの生徒招待、受諾で即active
   membership）、生徒からの参加申請（`/api/courses/:id/join`、pending→承認/拒否）。
@@ -75,6 +81,11 @@ npm run migrate:local   # = wrangler d1 migrations apply mckoy_db --local (apps/
 # 管理者が全員パスキーを失いログインできなくなった場合の break-glass 復旧手段も兼ねる。
 npm run seed:admin -- --name='管理者' --email='admin@example.com'   # (apps/api/scripts/seed-admin.mjs)
 
+# API: 既存ユーザーの管理者権限をはく奪（Web APIは isAdmin:false を拒否するため、
+# seed:admin と対になる運用スクリプトとして提供。--remote で本番D1。最後の1人の
+# 管理者は保護され、はく奪されない）。
+npm run revoke:admin -- --email='admin@example.com'   # (apps/api/scripts/revoke-admin.mjs)
+
 # API: dev server (http://localhost:8787)
 npm run dev:api
 
@@ -108,12 +119,14 @@ npx vitest run`、`apps/web`: `npx tsc --noEmit`）を実行する。UIに関わ
 ハッシュがCDNに反映されるまでの伝播待ちがあるため、新しいアセットが配信されるまで
 ポーリングしてから完了とみなす）。
 
-`dev` → `master` のPRを作成したタイミングで、そのPRの内容をステージング環境
-（`[env.staging]`、仕様書 §3「デプロイ環境」）へ毎回デプロイする（本番とは別のWorker・
-D1データベース・WebAuthnオリジンを使う。手順は本番デプロイと同様）。ユーザーが
-マージ前に実際の画面で確認できるようにするための運用。それ以外のタイミング
-（PR作成前の途中経過など）でのステージングデプロイは自動化せず、必要な時にユーザーの
-依頼を受けて手動実行する。
+`dev` → `master` のPR（`base: master`）の作成・更新時は `.github/workflows/deploy-staging.yml`
+（GitHub Actions）が自動でステージング環境（`[env.staging]`、仕様書 §3「デプロイ環境」。
+本番とは別のWorker・D1データベース・WebAuthnオリジン）へ `wrangler d1 migrations apply
+--env staging --remote` → `wrangler deploy --env staging` を実行する。ユーザーがマージ前に
+実際の画面で確認できるようにするための運用。手動で流す場合は同ワークフローの
+`workflow_dispatch`。認証は `secrets.CLOUDFLARE_API_TOKEN` / `secrets.CLOUDFLARE_ACCOUNT_ID`
+（d1-backup.yml と共用。トークンは Workers Scripts:Edit / D1:Edit / Account Settings:Read が必要）。
+PR作成前の途中経過など、それ以外のタイミングでのステージングデプロイは自動化しない。
 
 機能の動作確認は基本的にローカルDocker上で行う（`wrangler dev` + `vite` devサーバー、
 Playwright + 仮想パスキー認証器、検証後は `.wrangler/state` ごと `rm -rf`）。ステージング
