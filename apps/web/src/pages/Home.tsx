@@ -31,6 +31,12 @@ export default function Home() {
         </li>
         {user.isAdmin && (
           <li className="entry-list__item">
+            <Link to="/admin/users">ユーザー管理</Link>
+            <p className="entry-list__meta">登録済みユーザーの講師資格・管理者権限を管理します。</p>
+          </li>
+        )}
+        {user.isAdmin && (
+          <li className="entry-list__item">
             <Link to="/admin/deleted-novels">削除済み小説</Link>
             <p className="entry-list__meta">論理削除された小説を確認します。</p>
           </li>

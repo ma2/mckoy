@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import type { AppEnv } from '../types';
 import { requireSession, requireAdmin } from '../auth/session';
-import { getUserById, listUsers } from '../db/users';
+import { getUserById, listUsers, updateUser } from '../db/users';
 import { deletePasskeyByOwner, listPasskeysByUserId } from '../db/passkeys';
 import { issueInvitation } from '../auth/invitation';
 
@@ -25,6 +25,46 @@ adminUsersRoute.get('/', async (c) => {
       isAdmin: u.isAdmin,
       canTeach: u.canTeach,
     })),
+  });
+});
+
+/**
+ * 既存ユーザーの権限フラグ（講師資格 can_teach / 管理者権限 is_admin）を更新する
+ * （issue #43、仕様書 §22「ユーザー編集」「講師資格管理」「管理者権限管理」）。
+ *
+ * - can_teach は付与・はく奪どちらも可能。
+ * - is_admin は付与のみ可能。はく奪（false 化）はこのエンドポイントでは常に拒否する
+ *   — 悪意ある管理者が他の管理者を締め出してシステムを乗っ取ることを防ぐため、
+ *   管理者権限のはく奪はWeb経由では行わず、運用スクリプト
+ *   （`npm run revoke:admin`、scripts/revoke-admin.mjs）でのみ実施する。
+ */
+adminUsersRoute.patch('/:userId', async (c) => {
+  const target = await getUserById(c.env.DB, c.req.param('userId'));
+  if (!target) return c.json({ error: 'not_found' }, 404);
+
+  const body = await c.req.json<{ isAdmin?: boolean; canTeach?: boolean }>().catch(() => null);
+  if (!body) return c.json({ error: 'invalid_body' }, 400);
+  if (body.isAdmin !== undefined && typeof body.isAdmin !== 'boolean') {
+    return c.json({ error: 'invalid_body' }, 400);
+  }
+  if (body.canTeach !== undefined && typeof body.canTeach !== 'boolean') {
+    return c.json({ error: 'invalid_body' }, 400);
+  }
+  if (body.isAdmin === false) {
+    return c.json({ error: 'admin_revoke_forbidden' }, 400);
+  }
+
+  await updateUser(c.env.DB, target.id, { isAdmin: body.isAdmin, canTeach: body.canTeach });
+
+  const updated = await getUserById(c.env.DB, target.id);
+  return c.json({
+    user: {
+      id: updated!.id,
+      name: updated!.name,
+      email: updated!.email,
+      isAdmin: updated!.isAdmin,
+      canTeach: updated!.canTeach,
+    },
   });
 });
 

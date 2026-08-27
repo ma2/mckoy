@@ -21,6 +21,12 @@ npm workspaces による monorepo。`apps/api`（Cloudflare Workers + Hono + D1�
   （`revoked_at`記録のみ、物理削除しない）でき、`GET`/`DELETE /api/admin/invitations/:id`
   で講座に紐付かない招待（管理者専用）、`GET`/`DELETE /api/courses/:id/invitations/:id`で
   講座紐付きの生徒招待（`canManageCourse`）をそれぞれ一覧・失効できる（仕様書 §5.4、issue #42）。
+  既存ユーザーの講師資格・管理者権限の後付け変更は `PATCH /api/admin/users/:userId`
+  （`/admin/users` 画面、仕様書 §22、issue #43）。`can_teach` は付与・はく奪の両方可、
+  `is_admin` は付与のみ可で、はく奪（`isAdmin: false`）は常に 400 で拒否する
+  （悪意ある管理者による乗っ取り防止）。管理者権限のはく奪は運用スクリプト
+  `npm run revoke:admin -- --email=...`（`apps/api/scripts/revoke-admin.mjs`、
+  seed:admin と対、最後の1人の管理者は保護）でのみ行う。
 - Phase 2（講座）: courses / course_memberships、講座作成（作成者は同時にactive instructor
   membershipを得る）、講座編集、`/api/courses/:id/invitations`（講座紐付きの生徒招待、受諾で即active
   membership）、生徒からの参加申請（`/api/courses/:id/join`、pending→承認/拒否）。
@@ -74,6 +80,11 @@ npm run migrate:local   # = wrangler d1 migrations apply mckoy_db --local (apps/
 # --remote を付けると本番D1に対して実行でき、Web/アプリ内認証を一切経由しないため、
 # 管理者が全員パスキーを失いログインできなくなった場合の break-glass 復旧手段も兼ねる。
 npm run seed:admin -- --name='管理者' --email='admin@example.com'   # (apps/api/scripts/seed-admin.mjs)
+
+# API: 既存ユーザーの管理者権限をはく奪（Web APIは isAdmin:false を拒否するため、
+# seed:admin と対になる運用スクリプトとして提供。--remote で本番D1。最後の1人の
+# 管理者は保護され、はく奪されない）。
+npm run revoke:admin -- --email='admin@example.com'   # (apps/api/scripts/revoke-admin.mjs)
 
 # API: dev server (http://localhost:8787)
 npm run dev:api

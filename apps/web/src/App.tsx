@@ -16,6 +16,7 @@ import CourseAssignments from './pages/CourseAssignments';
 import CourseAnnouncements from './pages/CourseAnnouncements';
 import AdminInvitations from './pages/AdminInvitations';
 import AdminDeletedNovels from './pages/AdminDeletedNovels';
+import AdminUsers from './pages/AdminUsers';
 import AppHeader from './components/AppHeader';
 
 /**
@@ -131,6 +132,14 @@ export default function App() {
             element={
               <RequireAuth>
                 <CourseAnnouncements />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/admin/users"
+            element={
+              <RequireAuth>
+                <AdminUsers />
               </RequireAuth>
             }
           />

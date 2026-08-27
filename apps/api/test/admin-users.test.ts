@@ -5,7 +5,7 @@ import { Hono } from 'hono';
 import type { AppEnv } from '../src/types';
 import { adminUsersRoute } from '../src/routes/admin-users';
 import { issueSession } from '../src/auth/session';
-import { createUser } from '../src/db/users';
+import { createUser, getUserById } from '../src/db/users';
 import { createPasskey, listPasskeysByUserId } from '../src/db/passkeys';
 
 function buildApp() {
@@ -18,13 +18,13 @@ function buildApp() {
   return app;
 }
 
-async function createTestUser(overrides: { isAdmin?: boolean; name?: string } = {}) {
+async function createTestUser(overrides: { isAdmin?: boolean; canTeach?: boolean; name?: string } = {}) {
   return createUser(env.DB, {
     id: crypto.randomUUID(),
     name: overrides.name ?? 'Test User',
     email: `user-${crypto.randomUUID()}@example.com`,
     isAdmin: overrides.isAdmin ?? false,
-    canTeach: false,
+    canTeach: overrides.canTeach ?? false,
   });
 }
 
@@ -166,6 +166,89 @@ describe('passkey reset invitations (issue: admin lockout recovery)', () => {
       method: 'POST',
       headers: { cookie },
     }, env);
+    expect(res.status).toBe(404);
+  });
+});
+
+describe('admin user permission editing (issue #43)', () => {
+  async function patchUser(
+    app: Hono<AppEnv>,
+    cookie: string,
+    userId: string,
+    body: Record<string, unknown>,
+  ) {
+    return app.request(
+      `/admin/users/${userId}`,
+      { method: 'PATCH', headers: { cookie }, body: JSON.stringify(body) },
+      env,
+    );
+  }
+
+  it('rejects a non-admin from editing a user’s permissions', async () => {
+    const app = buildApp();
+    const user = await createTestUser();
+    const target = await createTestUser();
+    const cookie = await loginAs(app, user.id);
+
+    const res = await patchUser(app, cookie, target.id, { canTeach: true });
+    expect(res.status).toBe(403);
+    expect((await getUserById(env.DB, target.id))!.canTeach).toBe(false);
+  });
+
+  it('lets an admin grant can_teach to an existing user', async () => {
+    const app = buildApp();
+    const admin = await createTestUser({ isAdmin: true });
+    const target = await createTestUser();
+    const cookie = await loginAs(app, admin.id);
+
+    const res = await patchUser(app, cookie, target.id, { canTeach: true });
+    expect(res.status).toBe(200);
+    const { user } = await res.json<{ user: { canTeach: boolean } }>();
+    expect(user.canTeach).toBe(true);
+    expect((await getUserById(env.DB, target.id))!.canTeach).toBe(true);
+  });
+
+  it('lets an admin revoke can_teach from an existing user', async () => {
+    const app = buildApp();
+    const admin = await createTestUser({ isAdmin: true });
+    const target = await createTestUser({ canTeach: true });
+    const cookie = await loginAs(app, admin.id);
+
+    const res = await patchUser(app, cookie, target.id, { canTeach: false });
+    expect(res.status).toBe(200);
+    expect((await getUserById(env.DB, target.id))!.canTeach).toBe(false);
+  });
+
+  it('lets an admin grant is_admin to an existing user', async () => {
+    const app = buildApp();
+    const admin = await createTestUser({ isAdmin: true });
+    const target = await createTestUser();
+    const cookie = await loginAs(app, admin.id);
+
+    const res = await patchUser(app, cookie, target.id, { isAdmin: true });
+    expect(res.status).toBe(200);
+    expect((await getUserById(env.DB, target.id))!.isAdmin).toBe(true);
+  });
+
+  it('refuses to revoke is_admin via the API (script-only), leaving the user an admin', async () => {
+    const app = buildApp();
+    const admin = await createTestUser({ isAdmin: true });
+    const target = await createTestUser({ isAdmin: true });
+    const cookie = await loginAs(app, admin.id);
+
+    const res = await patchUser(app, cookie, target.id, { isAdmin: false });
+    expect(res.status).toBe(400);
+    const { error } = await res.json<{ error: string }>();
+    expect(error).toBe('admin_revoke_forbidden');
+    expect((await getUserById(env.DB, target.id))!.isAdmin).toBe(true);
+  });
+
+  it('returns 404 when editing a nonexistent user', async () => {
+    const app = buildApp();
+    const admin = await createTestUser({ isAdmin: true });
+    const cookie = await loginAs(app, admin.id);
+
+    const res = await patchUser(app, cookie, crypto.randomUUID(), { canTeach: true });
     expect(res.status).toBe(404);
   });
 });
