@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './lib/auth';
 import Login from './pages/Login';
 import AcceptInvitation from './pages/AcceptInvitation';
 import Home from './pages/Home';
+import Help from './pages/Help';
 import Passkeys from './pages/Passkeys';
 import CourseList from './pages/CourseList';
 import CourseNew from './pages/CourseNew';
@@ -50,6 +51,14 @@ export default function App() {
             element={
               <RequireAuth>
                 <Home />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/help"
+            element={
+              <RequireAuth>
+                <Help />
               </RequireAuth>
             }
           />
