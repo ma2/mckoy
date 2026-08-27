@@ -119,12 +119,14 @@ npx vitest run`、`apps/web`: `npx tsc --noEmit`）を実行する。UIに関わ
 ハッシュがCDNに反映されるまでの伝播待ちがあるため、新しいアセットが配信されるまで
 ポーリングしてから完了とみなす）。
 
-`dev` → `master` のPRを作成したタイミングで、そのPRの内容をステージング環境
-（`[env.staging]`、仕様書 §3「デプロイ環境」）へ毎回デプロイする（本番とは別のWorker・
-D1データベース・WebAuthnオリジンを使う。手順は本番デプロイと同様）。ユーザーが
-マージ前に実際の画面で確認できるようにするための運用。それ以外のタイミング
-（PR作成前の途中経過など）でのステージングデプロイは自動化せず、必要な時にユーザーの
-依頼を受けて手動実行する。
+`dev` → `master` のPR（`base: master`）の作成・更新時は `.github/workflows/deploy-staging.yml`
+（GitHub Actions）が自動でステージング環境（`[env.staging]`、仕様書 §3「デプロイ環境」。
+本番とは別のWorker・D1データベース・WebAuthnオリジン）へ `wrangler d1 migrations apply
+--env staging --remote` → `wrangler deploy --env staging` を実行する。ユーザーがマージ前に
+実際の画面で確認できるようにするための運用。手動で流す場合は同ワークフローの
+`workflow_dispatch`。認証は `secrets.CLOUDFLARE_API_TOKEN` / `secrets.CLOUDFLARE_ACCOUNT_ID`
+（d1-backup.yml と共用。トークンは Workers Scripts:Edit / D1:Edit / Account Settings:Read が必要）。
+PR作成前の途中経過など、それ以外のタイミングでのステージングデプロイは自動化しない。
 
 機能の動作確認は基本的にローカルDocker上で行う（`wrangler dev` + `vite` devサーバー、
 Playwright + 仮想パスキー認証器、検証後は `.wrangler/state` ごと `rm -rf`）。ステージング
