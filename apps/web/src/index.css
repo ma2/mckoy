@@ -118,6 +118,17 @@ a:hover {
 
 /* ---------- レイアウト ---------- */
 
+/* 認証済みページの外枠。内容が短くてもフッターを画面下端に張り付かせる。 */
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.app-shell > main {
+  flex: 1 0 auto;
+}
+
 .page {
   max-width: 46rem;
   margin: 0 auto;
@@ -426,4 +437,52 @@ code {
   padding: 0.15rem 0.4rem;
   border-radius: 4px;
   word-break: break-all;
+}
+
+/* ---------- 常設フッター ---------- */
+
+.app-footer {
+  flex-shrink: 0;
+  background: var(--bg-elevated);
+  border-top: 1px solid var(--border);
+  padding: var(--space-8) var(--space-6);
+  font-size: 0.85rem;
+}
+
+.app-footer__inner {
+  max-width: 46rem;
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+}
+
+.app-footer__group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.app-footer__heading {
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  margin: 0 0 var(--space-1);
+  padding: 0;
+  border: none;
+}
+
+.app-footer__group a {
+  color: var(--text-muted);
+}
+
+.app-footer__group a:hover {
+  color: var(--primary);
+}
+
+.app-footer__copyright {
+  color: var(--text-muted);
 }
