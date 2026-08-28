@@ -23,7 +23,6 @@ export default function AppHeader() {
         <span>Mckoy</span>
       </Link>
       <div className="app-header__user">
-        <Link to="/help">使い方</Link>
         <Link to="/">{user.name} さん</Link>
         <button className="btn-secondary" onClick={handleLogout}>
           ログアウト

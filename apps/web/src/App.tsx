@@ -4,7 +4,8 @@ import { AuthProvider, useAuth } from './lib/auth';
 import Login from './pages/Login';
 import AcceptInvitation from './pages/AcceptInvitation';
 import Home from './pages/Home';
-import Help from './pages/Help';
+import StudentHelp from './pages/StudentHelp';
+import InstructorHelp from './pages/InstructorHelp';
 import Passkeys from './pages/Passkeys';
 import CourseList from './pages/CourseList';
 import CourseNew from './pages/CourseNew';
@@ -18,20 +19,24 @@ import AdminInvitations from './pages/AdminInvitations';
 import AdminDeletedNovels from './pages/AdminDeletedNovels';
 import AdminUsers from './pages/AdminUsers';
 import AppHeader from './components/AppHeader';
+import AppFooter from './components/AppFooter';
 
 /**
- * 未認証なら/loginへリダイレクトする。認証済みなら常設ヘッダー（AppHeader）を
- * 付けて子要素を描画する。認証状態の確認中は簡易的なローディング表示を出す。
+ * 未認証なら/loginへリダイレクトする。認証済みなら常設ヘッダー（AppHeader）と
+ * フッター（AppFooter）を付けて子要素を描画する。app-shell を縦flexにして、
+ * 内容が短いページでもフッターが画面下に張り付くようにする。
+ * 認証状態の確認中は簡易的なローディング表示を出す。
  */
 function RequireAuth({ children }: { children: ReactElement }) {
   const { state } = useAuth();
   if (state.status === 'loading') return <p className="centered">読み込み中...</p>;
   if (state.status === 'unauthenticated') return <Navigate to="/login" replace />;
   return (
-    <>
+    <div className="app-shell">
       <AppHeader />
       {children}
-    </>
+      <AppFooter />
+    </div>
   );
 }
 
@@ -55,11 +60,20 @@ export default function App() {
               </RequireAuth>
             }
           />
+          <Route path="/help" element={<Navigate to="/help/student" replace />} />
           <Route
-            path="/help"
+            path="/help/student"
             element={
               <RequireAuth>
-                <Help />
+                <StudentHelp />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/help/instructor"
+            element={
+              <RequireAuth>
+                <InstructorHelp />
               </RequireAuth>
             }
           />
