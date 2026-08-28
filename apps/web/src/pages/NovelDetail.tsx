@@ -242,22 +242,19 @@ export default function NovelDetail() {
         </div>
       )}
 
-      {!authorWriteBlocked && (
+      {/* 改訂履歴は常にこの小説の下に表示されるので各エントリに小説タイトルは出さない。
+          履歴が無いときは見出しごと何も表示しない（issue #71）。 */}
+      {!authorWriteBlocked && revisions.length > 0 && (
         <>
           <h2>改訂履歴</h2>
-          {revisions.length === 0 ? (
-            <p className="empty-state">改訂履歴はありません。</p>
-          ) : (
-            <ul className="entry-list">
-              {revisions.map((r) => (
-                <li key={r.id} className="entry-list__item">
-                  <p className="entry-list__meta">{r.createdAt}</p>
-                  <h3>{r.title}</h3>
-                  {r.revisionComment && <p>{r.revisionComment}</p>}
-                </li>
-              ))}
-            </ul>
-          )}
+          <ul className="entry-list">
+            {revisions.map((r) => (
+              <li key={r.id} className="entry-list__item">
+                <p className="entry-list__meta">{r.createdAt}</p>
+                {r.revisionComment && <p style={{ margin: 0 }}>{r.revisionComment}</p>}
+              </li>
+            ))}
+          </ul>
         </>
       )}
 
