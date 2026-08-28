@@ -113,11 +113,15 @@ npx vitest run`、`apps/web`: `npx tsc --noEmit`）を実行する。UIに関わ
 `WebAuthn.addVirtualAuthenticator`）で実写確認する（検証用スクリプト・Playwright自体は
 検証後にコンテナごと破棄し、リポジトリには残さない）。
 
-`master` へのマージ後は本番環境（`[env.production]`）へ、新しいmigrationがあれば
-`wrangler d1 migrations apply mckoy_db --env production --remote` を先に実行してから
-`wrangler deploy --env production` でデプロイする（デプロイ後はビルド済みアセットの
-ハッシュがCDNに反映されるまでの伝播待ちがあるため、新しいアセットが配信されるまで
-ポーリングしてから完了とみなす）。
+`master` への push（＝PRのマージ）時は `.github/workflows/deploy-production.yml`
+（GitHub Actions）が自動で本番環境（`[env.production]`）へ、`wrangler d1 migrations apply
+mckoy_db --env production --remote`（①）→ 成功時のみ `wrangler deploy --env production`（②）
+の順でデプロイする。マイグレーションは「追記のみ」で後方互換のため①②間に旧コードが新
+スキーマに当たっても壊れない。①が失敗すれば②は走らない。手動で流す場合は同ワークフローの
+`workflow_dispatch`。デプロイ後はビルド済みアセットのハッシュがCDNに反映されるまでの
+伝播待ちがあるため、新しいアセットが配信されるまでポーリングしてから完了とみなす。
+破壊的なスキーマ変更（DROP/RENAME等）を入れる回は expand/contract を複数リリースに
+分ける（自動適用されるため特に注意）。
 
 `dev` → `master` のPR（`base: master`）の作成・更新時は `.github/workflows/deploy-staging.yml`
 （GitHub Actions）が自動でステージング環境（`[env.staging]`、仕様書 §3「デプロイ環境」。
