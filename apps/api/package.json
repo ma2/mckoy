@@ -9,6 +9,7 @@
     "migrate:remote": "wrangler d1 migrations apply mckoy_db --remote",
     "seed:admin": "node scripts/seed-admin.mjs",
     "revoke:admin": "node scripts/revoke-admin.mjs",
+    "backup:download": "node scripts/backup-download.mjs",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },

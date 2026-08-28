@@ -924,11 +924,20 @@ repoのActions artifactであり、リポジトリ自体と同等の信頼境界
 
 1. artifact（`mckoy-db-backup-<run_id>`）をダウンロードする。以下のいずれかの方法による。
 
+   - **`npm run backup:download` から**（推奨、issue #69）: `gh` CLIがインストール・認証済み
+     であれば、リポジトリルートで
+     ```bash
+     npm run backup:download                 # 最新の成功実行の artifact を ./backup-download に取得
+     npm run backup:download -- --list        # 直近のバックアップ実行の一覧を表示するだけ
+     npm run backup:download -- --run=<run_id>  # 特定の run を取得
+     ```
+     で `./backup-download/mckoy-db-backup-<run_id>.sql` に保存される
+     （`apps/api/scripts/backup-download.mjs`）。
    - **GitHubのWeb画面から**: `https://github.com/ma2/mckoy/actions/workflows/d1-backup.yml`
      を開き、対象の実行を選ぶ。実行詳細画面下部の「Artifacts」セクションから
      `mckoy-db-backup-<run_id>` をクリックするとzipがダウンロードされる（展開すると
      `mckoy-db-backup.sql` が得られる）。
-   - **`gh` CLIから**:
+   - **`gh` CLIから**（上記スクリプトが行っている手順そのもの）:
      ```bash
      # 直近の実行一覧からrun idを確認
      gh run list --repo ma2/mckoy --workflow="D1 バックアップ" --limit 5
