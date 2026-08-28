@@ -8,3 +8,6 @@ dist/
 .DS_Store
 test-results/
 playwright-report/
+# `npm run backup:download` の既定の保存先。ダンプにはPIIが平文で含まれるため
+# コミットしない（仕様書 §19.1）。
+backup-download/

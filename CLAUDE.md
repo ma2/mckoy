@@ -142,7 +142,9 @@ Playwright + 仮想パスキー認証器、検証後は `.wrangler/state` ごと
 
 本番D1は `.github/workflows/d1-backup.yml`（GitHub Actions、毎日UTC 18:00 = JST 03:00 と
 `workflow_dispatch`）が自動でSQLダンプにエクスポートし、GitHub Actions artifact（保持期間
-90日）として保存する（仕様書 §19、issue #44）。復元手順は仕様書 §19.2 を参照。
+90日）として保存する（仕様書 §19、issue #44）。この artifact のローカル取得は
+`npm run backup:download`（`apps/api/scripts/backup-download.mjs`、`gh` CLI 必須、issue #69。
+`--list` / `--run=<id>` / `--out=<dir>` 対応）で1コマンドで行える。復元手順は仕様書 §19.2 を参照。
 
 ## Mckoy とは
 
