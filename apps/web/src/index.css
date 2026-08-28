@@ -125,8 +125,11 @@ a:hover {
   min-height: 100vh;
 }
 
+/* 縦flex内で .page は margin:0 auto を持つため align-items:stretch が効かず
+   shrink-to-fit で細くなる。width:100% で従来どおりの幅（max-width で頭打ち）に戻す。 */
 .app-shell > main {
   flex: 1 0 auto;
+  width: 100%;
 }
 
 .page {

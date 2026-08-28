@@ -21,7 +21,7 @@ export default function AppFooter() {
           <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer">
             GitHub（ソースコード）
           </a>
-          <span className="app-footer__copyright">© {new Date().getFullYear()} Mckoy</span>
+          <span className="app-footer__copyright">© {new Date().getFullYear()} keiichi matsunaga</span>
         </div>
       </div>
     </footer>
