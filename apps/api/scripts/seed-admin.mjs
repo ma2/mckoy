@@ -32,7 +32,11 @@ const wranglerEnv = arg('env', 'production');
 const dbName = arg('db', 'mckoy_db');
 const rpOrigin = process.env.MCKOY_RP_ORIGIN ?? (remote ? undefined : 'http://localhost:5173');
 if (remote && !rpOrigin) {
-  console.error('--remote requires MCKOY_RP_ORIGIN to be set (e.g. https://mckoy-api.<subdomain>.workers.dev)');
+  console.error(
+    '--remote requires MCKOY_RP_ORIGIN to be set ' +
+      '(e.g. https://mckoy-api.ma2.workers.dev for production, ' +
+      'https://mckoy-api-staging.ma2.workers.dev for staging)',
+  );
   process.exit(1);
 }
 
