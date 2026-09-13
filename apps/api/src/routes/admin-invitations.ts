@@ -3,6 +3,7 @@ import type { AppEnv } from '../types';
 import { requireSession, requireAdmin } from '../auth/session';
 import { issueInvitation } from '../auth/invitation';
 import { getInvitationById, listInvitations, revokeInvitation } from '../db/invitations';
+import { getUserByEmail } from '../db/users';
 
 // 講座に紐付かない招待（管理者・講師資格の付与）。管理者のみ発行できる（仕様書 §5.2）。
 // 講座紐付きの生徒招待は routes/courses.ts の POST /:id/invitations が担当する。
@@ -16,6 +17,14 @@ adminInvitationsRoute.post('/', async (c) => {
   const body = await c.req.json<{ name?: string; email?: string; isAdmin?: boolean; canTeach?: boolean }>();
   if (!body.name || !body.email) {
     return c.json({ error: 'name_and_email_required' }, 400);
+  }
+  // この招待は必ず新規アカウント作成として扱われる（target_user_id無し）ので、
+  // 既に users 行があるメールアドレス宛だと受諾時に必ず409になり招待自体が無駄になる
+  // （routes/invitations.ts の register/options と同じチェックをここでも先に行う）。
+  // パスキーを失ったユーザーの再登録には admin-users.ts の
+  // passkey-reset-invitation（target_user_id付き）を使うべきなので、その旨も伝える。
+  if (await getUserByEmail(c.env.DB, body.email)) {
+    return c.json({ error: 'already_registered' }, 409);
   }
 
   const token = await issueInvitation(c.env.DB, {
