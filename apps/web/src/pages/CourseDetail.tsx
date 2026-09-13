@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import Breadcrumb from '../components/Breadcrumb';
-import { ApiError } from '../lib/api';
+import { ApiError, isAlreadyRegisteredError } from '../lib/api';
 import {
   approveMember,
   createCourseInvitation,
@@ -44,6 +44,7 @@ export default function CourseDetail() {
   const [message, setMessage] = useState<string | null>(null);
   const [invitations, setInvitations] = useState<CourseInvitation[]>([]);
   const [invitationsError, setInvitationsError] = useState<string | null>(null);
+  const [inviteError, setInviteError] = useState<string | null>(null);
 
   async function load() {
     if (!id) return;
@@ -117,11 +118,20 @@ export default function CourseDetail() {
     e.preventDefault();
     if (!id) return;
     setInvitationUrl(null);
-    const { invitationUrl } = await createCourseInvitation(id, { name: inviteName, email: inviteEmail });
-    setInvitationUrl(invitationUrl);
-    setInviteName('');
-    setInviteEmail('');
-    await load();
+    setInviteError(null);
+    try {
+      const { invitationUrl } = await createCourseInvitation(id, { name: inviteName, email: inviteEmail });
+      setInvitationUrl(invitationUrl);
+      setInviteName('');
+      setInviteEmail('');
+      await load();
+    } catch (err) {
+      setInviteError(
+        isAlreadyRegisteredError(err)
+          ? 'このメールアドレスは既に登録されています。パスキーを紛失した場合は「パスキー管理」画面から対象ユーザーのパスキー再登録招待を発行してください。'
+          : '招待の作成に失敗しました。',
+      );
+    }
   }
 
   async function handleRevokeInvitation(invitationId: string) {
@@ -241,6 +251,11 @@ export default function CourseDetail() {
               </label>
               <button type="submit">招待URLを発行</button>
             </form>
+            {inviteError && (
+              <p className="error" style={{ marginTop: 'var(--space-4)' }}>
+                {inviteError}
+              </p>
+            )}
             {invitationUrl && (
               <p className="notice" style={{ marginTop: 'var(--space-4)' }}>
                 招待URL: <code>{invitationUrl}</code>

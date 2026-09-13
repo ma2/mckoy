@@ -297,6 +297,26 @@ describe('course invitations listing/revocation (issue #42)', () => {
     expect(after[0]!.revokedAt).not.toBeNull();
   });
 
+  it('rejects creating a course invitation for an email that already has an account (issue: already_registered)', async () => {
+    const app = buildApp();
+    const { id: courseId, owner } = await seedCourse();
+    const cookie = await loginAs(app, owner.id);
+    const existing = await createTestUser();
+
+    const res = await app.request(
+      `/courses/${courseId}/invitations`,
+      jsonRequest('POST', cookie, { name: 'Existing', email: existing.email }),
+      env,
+    );
+    expect(res.status).toBe(409);
+    const { error } = await res.json<{ error: string }>();
+    expect(error).toBe('already_registered');
+
+    const listRes = await app.request(`/courses/${courseId}/invitations`, { headers: { cookie } }, env);
+    const { invitations } = await listRes.json<{ invitations: unknown[] }>();
+    expect(invitations).toHaveLength(0);
+  });
+
   it('rejects an instructor of a different course from revoking another course’s invitation', async () => {
     const app = buildApp();
     const { id: courseId, owner } = await seedCourse();
