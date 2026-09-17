@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { api } from '../lib/api';
+import { api, isAlreadyRegisteredError } from '../lib/api';
 import { registerPasskeyForInvitation } from '../lib/webauthn';
 import { useAuth } from '../lib/auth';
 
@@ -36,8 +36,12 @@ export default function AcceptInvitation() {
       await registerPasskeyForInvitation(token);
       await refresh();
       navigate('/', { replace: true });
-    } catch {
-      setError('パスキーの登録に失敗しました。');
+    } catch (err) {
+      setError(
+        isAlreadyRegisteredError(err)
+          ? 'このメールアドレスは既に登録されています。管理者に連絡し、パスキーの再登録を依頼してください。'
+          : 'パスキーの登録に失敗しました。',
+      );
     } finally {
       setPending(false);
     }

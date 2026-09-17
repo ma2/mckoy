@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import Breadcrumb from '../components/Breadcrumb';
 import { useAuth } from '../lib/auth';
+import { isAlreadyRegisteredError } from '../lib/api';
 import { createGlobalInvitation, listGlobalInvitations, revokeGlobalInvitation, type GlobalInvitation } from '../lib/admin';
 import { invitationStatus } from '../lib/invitationStatus';
 
@@ -48,8 +49,12 @@ export default function AdminInvitations() {
       setIsAdmin(false);
       setCanTeach(false);
       await loadInvitations();
-    } catch {
-      setError('招待の作成に失敗しました。');
+    } catch (err) {
+      setError(
+        isAlreadyRegisteredError(err)
+          ? 'このメールアドレスは既に登録されています。パスキーを紛失した場合は「パスキー管理」画面から対象ユーザーのパスキー再登録招待を発行してください。'
+          : '招待の作成に失敗しました。',
+      );
     }
   }
 

@@ -4,6 +4,7 @@ import { requireSession } from '../auth/session';
 import { issueInvitation } from '../auth/invitation';
 import { getInvitationById, listInvitations, revokeInvitation } from '../db/invitations';
 import { createCourse, getCourseById, listCourses, updateCourse, type CourseStatus } from '../db/courses';
+import { getUserByEmail } from '../db/users';
 
 const COURSE_STATUSES: CourseStatus[] = ['open', 'closed', 'closed_readonly'];
 import {
@@ -243,6 +244,12 @@ coursesRoute.post('/:id/invitations', async (c) => {
   const body = await c.req.json<{ name?: string; email?: string }>();
   if (!body.name || !body.email) {
     return c.json({ error: 'name_and_email_required' }, 400);
+  }
+  // 講座招待も必ず新規アカウント作成（target_user_id無し）として扱われるので、
+  // 既存メールアドレス宛だと受諾時に必ず409になる。admin-invitations.ts と同じ
+  // チェックを先に行う。
+  if (await getUserByEmail(c.env.DB, body.email)) {
+    return c.json({ error: 'already_registered' }, 409);
   }
 
   const token = await issueInvitation(c.env.DB, {

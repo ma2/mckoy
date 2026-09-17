@@ -56,6 +56,28 @@ describe('POST /admin/invitations authorization', () => {
   });
 });
 
+describe('POST /admin/invitations already_registered', () => {
+  it('rejects creating an invitation for an email that already has an account', async () => {
+    const app = buildApp();
+    const admin = await createTestUser({ isAdmin: true });
+    const cookie = await loginAs(app, admin.id);
+    const existing = await createTestUser();
+
+    const res = await app.request(
+      '/admin/invitations',
+      jsonRequest('POST', cookie, { name: 'Existing', email: existing.email, canTeach: true }),
+      env,
+    );
+    expect(res.status).toBe(409);
+    const { error } = await res.json<{ error: string }>();
+    expect(error).toBe('already_registered');
+
+    const listRes = await app.request('/admin/invitations', { headers: { cookie } }, env);
+    const { invitations } = await listRes.json<{ invitations: unknown[] }>();
+    expect(invitations).toHaveLength(0);
+  });
+});
+
 describe('GET /admin/invitations (issue #42)', () => {
   it('rejects a non-admin from listing', async () => {
     const app = buildApp();
